@@ -3,7 +3,7 @@ package com.zoee.equipops.order.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;
-import jdk.jfr.Enabled;
+
 
 /**
  * Java 的 enum（枚举）是一种特殊的类，它的实例数量在编译时就固定死了，不能在运行时用 new 创建新实例。

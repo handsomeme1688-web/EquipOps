@@ -1,13 +1,13 @@
 package com.zoee.equipops.device.domain.dto;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class DeviceCreateDTO {
-    @NotBlank(message = "设备责任人不能为空")
+    @NotNull(message = "设备责任人不能为空")
     private Long ownerId;
 
     // @NotNull 只挡 null，@NotBlank 顺便连空格一起挡了。

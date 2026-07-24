@@ -9,7 +9,7 @@ public enum DeviceStatus {
     REPAIRING(2, "维修中"),
     SCRAPPED(3, "报废");
 
-    @EnumValue
+    @EnumValue // 这两个注解只有变量要写进数据库时才加
     private final int code;
     @JsonValue
     private final String description;

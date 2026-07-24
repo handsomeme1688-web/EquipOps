@@ -3,6 +3,8 @@ package com.zoee.equipops.device.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zoee.equipops.common.exception.BizException;
+import com.zoee.equipops.common.result.ResultCode;
 import com.zoee.equipops.device.domain.dto.DeviceCreateDTO;
 import com.zoee.equipops.device.domain.dto.DeviceUpdateDTO;
 import com.zoee.equipops.device.domain.entity.Device;
@@ -42,12 +44,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Override
     @Transactional(rollbackFor = Exception.class) // 用于事务，纯读操作不加
     public DeviceVO create(DeviceCreateDTO deviceCreateDTO) {
-
-
         // 查重,只看是否存在，不获取整个数据内容，速度更快
         boolean existDevice= lambdaQuery().eq(Device::getCode,deviceCreateDTO.getCode()).exists();
-        // TODO: 替换为 BizException(ResultCode.DEVICE_CODE_EXISTS) → 返回 409
-        if(existDevice) throw new RuntimeException("设备编号已存在");
+        if(existDevice) throw new BizException(ResultCode.DEVICE_CODE_EXISTS);
 
         // 保存
         Device device=new Device();
@@ -59,10 +58,10 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         device.setDescription(deviceCreateDTO.getDescription());
 
         // TODO Day 11: 从 UserContext 取当前登录用户
-        Long currentUserId = 1L;      // 暂时写死
+//        Long currentUserId = 1L;      // 暂时写死
         Long currentDeptId = 2L;      // 暂时写死
         device.setDeptId(currentDeptId);
-        device.setCreateBy(currentUserId);
+//        device.setCreateBy(currentUserId);
 
         device.setStatus(DeviceStatus.NORMAL);
         save(device);
@@ -74,14 +73,12 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Transactional(rollbackFor = Exception.class)
     public DeviceVO update(Long id, DeviceUpdateDTO deviceUpdateDTO) {
         Device existDevice=getById(id);
-        if(existDevice == null) throw new RuntimeException("设备不存在");
+        if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         existDevice.setOwnerId(deviceUpdateDTO.getOwnerId());
         existDevice.setLocation(deviceUpdateDTO.getLocation());
         existDevice.setName(deviceUpdateDTO.getName());
         existDevice.setModel(deviceUpdateDTO.getModel());
         existDevice.setDescription(deviceUpdateDTO.getDescription());
-        // TODO Day 11: 从 UserContext 取当前用户
-        existDevice.setUpdateBy(1L);   // 暂时写死
         updateById(existDevice);
         return toVO(existDevice);
     }
@@ -89,14 +86,14 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        if(getById(id) == null) throw new RuntimeException("设备不存在");
+        if(getById(id) == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         removeById(id);
     }
 
     @Override
     public DeviceVO detail(Long id) {
         Device existDevice = getById(id);
-        if (existDevice == null) throw new RuntimeException("设备不存在");
+        if (existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         return toVO(existDevice);
     }
 
