@@ -1,6 +1,6 @@
-# 建表按依赖顺序：dept → role → permission → user
-# → user_role → role_permission → device → device_file
-# → repair_order → repair_record → operation_log → message_outbox
+-- 建表按依赖顺序：dept → role → permission → user
+-- → user_role → role_permission → device → device_file
+-- → repair_order → repair_record → operation_log → message_outbox
 
 
 DROP TABLE IF EXISTS `dept`;
@@ -74,7 +74,7 @@ CREATE TABLE `user_role`(
     `user_id` BIGINT NOT NULL COMMENT '用户id',
     `role_id` BIGINT NOT NULL COMMENT '角色id',
     UNIQUE KEY `uk_user_role` (`user_id`, `role_id`),
-#   按最左前缀原则,查"某用户有哪些角色"能直接用它,不需要再给 user_id 单独建索引。
+--   按最左前缀原则,查"某用户有哪些角色"能直接用它,不需要再给 user_id 单独建索引。
     KEY `idx_role_id` (`role_id`) COMMENT '加速查询，例如：查拥有“管理员”角色的所有用户有哪些'
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户角色表';
 

@@ -1,3 +1,31 @@
 spring:
   application:
     name: equipops-api
+  datasource:
+    url: jdbc:mysql://localhost:3306/equipops
+    username: root
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Flyway 配置
+  flyway:
+    # 1. 是否开启 Flyway 自动迁移（默认为 true）
+    enabled: true
+    # 2. SQL 迁移文件的存放路径（默认就是 classpath:db/migration，可不写，显式写出更清晰）
+    locations: classpath:db/migration
+    # 3. 针对已有数据的旧数据库：如果数据库不是空的，是否开启基线初始化（非常重要！）
+    baseline-on-migrate: true
+    # 4. 基线版本号，默认为 1
+    baseline-version: 0
+    # 5. 校验执行顺序，禁止修改已执行过的脚本 checksum（默认为 true）
+    validate-on-migrate: true
+    # 6. 是否允许出错后清洗/清空数据库（生产环境严禁设为 true！）
+    clean-disabled: true
+
+
+#严格命名规范
+#  src/main/resources/
+#  └── db/
+#  └── migration/
+#  ├── V1__init_schema.sql
+#  ├── V2__add_user_table.sql
+#  └── V2.1__add_index_to_user.sql

@@ -1,6 +1,10 @@
 package com.zoee.equipops.order.enums;
 
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonValue;
+import jdk.jfr.Enabled;
+
 /**
  * Java 的 enum（枚举）是一种特殊的类，它的实例数量在编译时就固定死了，不能在运行时用 new 创建新实例。
  * 简单理解：它就是一份有限的、预定义的常量清单。
@@ -18,7 +22,9 @@ public enum OrderStatus {
     CLOSED(6, "已关闭");
 
     // 2. 定义私有属性：数值和描述
-    private final Integer code; // 数据库存的数值
+    @EnumValue
+    private final int code; // 数据库存的数值
+    @JsonValue
     private final String description; // 显示用的中文描述
 
     // 3. 枚举构造器默认就是 private，不用也不能加 public。
@@ -29,7 +35,18 @@ public enum OrderStatus {
     }
 
     // 4. Getter 方法
-    public Integer getCode(){
+    /**
+     * 用基本类型 int
+     *
+     * 理由是这里的值不可能为 null：
+     *
+     * code 是 final 字段，在构造器里必填，7 个枚举常量每个都传了值（0-6）
+     * 枚举实例一旦存在，code 就一定有值
+     * 既然不可能是 null，用包装类 Integer 就没有意义，反而多一层装箱、还给人"可能为 null"的错觉
+     *
+     * @return
+     */
+    public int getCode(){
         return code;
     }
     public String getDescription(){
@@ -41,15 +58,12 @@ public enum OrderStatus {
      * @param code 数据库中存的值 (0~6)
      * @return 对应的 OrderStatus 枚举，未找到则返回 null
      */
-    public static OrderStatus findByCode(Integer code){
-        if (code == null) {
-            return null;
-        }
+    public static OrderStatus findByCode(int code){
         // 遍历所有枚举值，找到 code 匹配的那个
         // 这是常见的数据库值 → 枚举对象反查方法。
         // 你从数据库查出 status = 2，调 OrderStatus.findByCode(2) 就得到 IN_REPAIR。
         for (OrderStatus status : OrderStatus.values()) {// OrderStatus.values() 是编译器自动生成的方法，返回所有 7 个常量的数组。
-            if (status.getCode().equals(code)) { // code相等
+            if (status.getCode() == code) { // code相等
                 return status; // 返回对象，而不是对象属性
             }
         }
