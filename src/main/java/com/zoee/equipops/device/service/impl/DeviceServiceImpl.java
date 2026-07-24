@@ -1,6 +1,6 @@
 package com.zoee.equipops.device.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zoee.equipops.common.exception.BizException;
@@ -15,7 +15,7 @@ import com.zoee.equipops.device.mapper.DeviceMapper;
 import com.zoee.equipops.device.service.DeviceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+
 
 
 
@@ -37,7 +37,6 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         vo.setOwnerId(device.getOwnerId());
         vo.setCreateTime(device.getCreateTime());
         vo.setUpdateTime(device.getUpdateTime());
-        // TODO Day 9: deptName/ownerName 需 JOIN，暂留 null
         return vo;
     }
 
@@ -99,19 +98,15 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
 
     @Override
     public Page<DeviceVO> page(DeviceQuery deviceQuery) {
-        // 第 1 步：构造分页对象（告诉 MP 查第几页、每页几条）
-        Page<Device> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
+        // 构造分页对象（告诉 MP 查第几页、每页几条）。泛型是 DeviceVO（不再是 Device）
+        Page<DeviceVO> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
+//        Page<Device> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
 
-        // 第 2 步：构造查询条件（动态拼 where）
-        LambdaQueryWrapper<Device> wrapper =new LambdaQueryWrapper<>();
-        // wrapper 的三个参数：要不要拼这个条件，拼哪个数据库列，拼什么值
-        wrapper.like(StringUtils.hasText(deviceQuery.getName()),Device::getName, deviceQuery.getName());
-        wrapper.eq(StringUtils.hasText(deviceQuery.getCode()),Device::getCode,deviceQuery.getCode());
-        wrapper.eq(deviceQuery.getStatus()!=null,Device::getStatus,deviceQuery.getStatus());
-        wrapper.eq(deviceQuery.getDeptId()!=null,Device::getDeptId,deviceQuery.getDeptId());
-        wrapper.eq(deviceQuery.getOwnerId()!=null,Device::getOwnerId,deviceQuery.getOwnerId());
+        // 调 JOIN 查询：MP 拦截器会把查询结果 + 总数，填进 pageParam 这个对象
+        baseMapper.selectDeviceVoPage(pageParam,deviceQuery);
 
-        Page<Device> devicePage = page(pageParam,wrapper);
-        return (Page<DeviceVO>) devicePage.convert(this::toVO);
+        // pageParam 已经被填满了，直接返回
+        return pageParam;
+
     }
 }

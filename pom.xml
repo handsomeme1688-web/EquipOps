@@ -42,10 +42,14 @@
         </dependency>
 
         <!-- 数据库迁移 -->
+        <!-- Spring Boot 4.x 起，仅有 flyway-core 不再触发自动迁移，
+             必须用 spring-boot-starter-flyway 才会在启动时自动执行迁移
+             （flyway-core 由该 starter 传递引入，无需再单独声明） -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
+        <!-- MySQL 方言模块（Flyway 10+ 起各数据库支持拆成独立模块） -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+  namespace 必须是 DeviceMapper 接口的全限定名，一个字都不能差，
+  否则 MyBatis 找不到接口，启动报 BindingException。
+-->
+<mapper namespace="com.zoee.equipops.device.mapper.DeviceMapper">
+
+    <!-- ==========================================================================
+         结果映射：把 JOIN 出来的扁平结果集，逐列装进 DeviceVO
+           column   = 结果集里的列名（或列别名）
+           property = DeviceVO 里的字段名
+         这段是纯机械的列 ↔ 字段对应，实际开发里 MyBatisX 插件能一键生成，不用手敲。
+         ========================================================================== -->
+    <resultMap id="DeviceVoMap" type="com.zoee.equipops.device.domain.vo.DeviceVO">
+        <id     column="id"          property="id"/>
+        <result column="code"        property="code"/>
+        <result column="name"        property="name"/>
+        <result column="model"       property="model"/>
+        <result column="location"    property="location"/>
+        <!-- status 是 DeviceStatus 枚举：靠 @EnumValue + MP 全局枚举处理器自动在 TINYINT↔枚举 间转换 -->
+        <result column="status"      property="status"/>
+        <result column="description" property="description"/>
+
+        <!-- 下面两对是 JOIN 带出来的“翻译”结果：id 给前端逻辑用，name 给人看 -->
+        <result column="dept_id"     property="deptId"/>
+        <result column="dept_name"   property="deptName"/>
+        <result column="owner_id"    property="ownerId"/>
+        <result column="owner_name"  property="ownerName"/>
+
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- ==========================================================================
+         分页 + 三表 JOIN 查询
+           - resultMap 指向上面那张映射表，每行都按它装进 DeviceVO
+           - 分页的 LIMIT 和 count 由 MP 拦截器自动加，这里不用写
+           - id 必须和 DeviceMapper 接口里的方法名一致：selectDeviceVoPage
+
+         需求：
+           1. FROM device 关联 dept（取部门名）、user（取责任人 real_name）
+           2. ⚠ 列名冲突：device.name 和 dept.name 都叫 name，
+              JOIN 时必须给 dept 的起别名（如 dp.name AS dept_name），
+              否则结果集里两个 name 会互相覆盖 —— 这是这条 SQL 最容易踩的坑。
+           3. 动态 WHERE：用 <where> + <if>，按 q 里非空的条件才拼，对应你 Day 8
+              LambdaQueryWrapper 那五条（name 模糊 / code 精确 / status / deptId / ownerId）。
+           4. 取值一律用 #{q.xxx}（预编译占位符，防 SQL 注入），绝不用 ${}。
+         ========================================================================== -->
+    <select id="selectDeviceVoPage" resultMap="DeviceVoMap">
+        SELECT d.id, d.code, d.name, d.model, d.location, d.status, d.description,
+               d.dept_id, d.owner_id,
+               dp.name AS dept_name, op.real_name AS owner_name,
+               d.create_time, d.update_time FROM device d
+                LEFT JOIN dept dp ON d.dept_id = dp.id
+                LEFT JOIN `user` op ON d.owner_id = op.id
+        <where>
+            <if test="q.name != null and q.name != ''">
+                AND d.name LIKE CONCAT('%', #{q.name}, '%')
+            </if>
+            <if test="q.code != null and q.code != ''">
+                AND d.code = #{q.code}
+            </if>
+            <if test="q.status != null">
+                AND d.status = #{q.status}
+            </if>
+            <if test="q.deptId != null">
+                AND d.dept_id = #{q.deptId}
+            </if>
+            <if test="q.ownerId != null">
+                AND d.owner_id = #{q.ownerId}
+            </if>
+        </where>
+    </select>
+
+</mapper>
