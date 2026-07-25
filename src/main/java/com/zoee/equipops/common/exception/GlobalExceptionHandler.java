@@ -4,7 +4,6 @@ import com.zoee.equipops.common.result.Result;
 import com.zoee.equipops.common.result.ResultCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
