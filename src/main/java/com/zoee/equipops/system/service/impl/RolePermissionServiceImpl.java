@@ -18,7 +18,7 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
     @Override
     public void assignPermission(Long roleId, List<Long> permissionIds) {
         remove(new LambdaQueryWrapper<RolePermission>().eq(RolePermission::getRoleId,roleId));
-        if (true) throw new RuntimeException("模拟异常，测试回滚");
+//        if (true) throw new RuntimeException("模拟异常，测试回滚");
 //        写法一
         if (permissionIds != null && !permissionIds.isEmpty()) {
             List<RolePermission> newList=new ArrayList<>();

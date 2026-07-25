@@ -3,6 +3,7 @@ package com.zoee.equipops.device.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zoee.equipops.common.context.UserContext;
 import com.zoee.equipops.common.exception.BizException;
 import com.zoee.equipops.common.result.ResultCode;
 import com.zoee.equipops.device.domain.dto.DeviceCreateDTO;
@@ -13,6 +14,7 @@ import com.zoee.equipops.device.domain.vo.DeviceVO;
 import com.zoee.equipops.device.enums.DeviceStatus;
 import com.zoee.equipops.device.mapper.DeviceMapper;
 import com.zoee.equipops.device.service.DeviceService;
+import com.zoee.equipops.system.entity.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,13 +57,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         device.setModel(deviceCreateDTO.getModel());
         device.setLocation(deviceCreateDTO.getLocation());
         device.setDescription(deviceCreateDTO.getDescription());
-
-        // TODO Day 11: 从 UserContext 取当前登录用户
-//        Long currentUserId = 1L;      // 暂时写死
-        Long currentDeptId = 2L;      // 暂时写死
-        device.setDeptId(currentDeptId);
-//        device.setCreateBy(currentUserId);
-
+        device.setDeptId(UserContext.getDeptId()); // 服务端强制加 deptId，不信任前端
         device.setStatus(DeviceStatus.NORMAL);
         save(device);
 

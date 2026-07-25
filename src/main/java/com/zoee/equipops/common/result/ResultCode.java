@@ -24,7 +24,12 @@ public enum ResultCode {
 
     // ===== 21xxx 工单 =====
     ORDER_NOT_FOUND(21001, 404, "工单不存在"),
-    ORDER_STATUS_ILLEGAL(21002, 409, "工单状态流转非法");
+    ORDER_STATUS_ILLEGAL(21002, 409, "工单状态流转非法"),
+
+    // ===== 30xxx 认证 =====
+    USERNAME_EXISTS(30001, 409, "用户名已存在"),
+    BAD_CREDENTIALS(30002, 401, "用户名或密码错误");
+
 
     private final int code;        // 业务码,前端精确判断用
     private final int httpStatus;  // HTTP 状态码,给网关/浏览器
