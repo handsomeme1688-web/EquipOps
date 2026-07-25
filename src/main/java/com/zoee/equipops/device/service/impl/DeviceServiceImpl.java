@@ -3,6 +3,7 @@ package com.zoee.equipops.device.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zoee.equipops.auth.service.PermissionCheckService;
 import com.zoee.equipops.common.context.UserContext;
 import com.zoee.equipops.common.exception.BizException;
 import com.zoee.equipops.common.result.ResultCode;
@@ -14,16 +15,15 @@ import com.zoee.equipops.device.domain.vo.DeviceVO;
 import com.zoee.equipops.device.enums.DeviceStatus;
 import com.zoee.equipops.device.mapper.DeviceMapper;
 import com.zoee.equipops.device.service.DeviceService;
-import com.zoee.equipops.system.entity.User;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-
-
 @Service
+@RequiredArgsConstructor
 public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> implements DeviceService {
 
+    private final PermissionCheckService permissionCheckService;
 
     private DeviceVO toVO(Device device) {
         if (device == null) return null;
@@ -68,6 +68,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Transactional(rollbackFor = Exception.class)
     public DeviceVO update(Long id, DeviceUpdateDTO deviceUpdateDTO) {
         Device existDevice=getById(id);
+        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+            throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
+        }
         if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         existDevice.setOwnerId(deviceUpdateDTO.getOwnerId());
         existDevice.setLocation(deviceUpdateDTO.getLocation());
@@ -82,6 +85,10 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         if(getById(id) == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+        Device existDevice = getById(id);
+        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+            throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
+        }
         removeById(id);
     }
 
@@ -89,6 +96,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     public DeviceVO detail(Long id) {
         Device existDevice = getById(id);
         if (existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+            throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
+        }
         return toVO(existDevice);
     }
 
@@ -96,7 +106,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     public Page<DeviceVO> page(DeviceQuery deviceQuery) {
         // 构造分页对象（告诉 MP 查第几页、每页几条）。泛型是 DeviceVO（不再是 Device）
         Page<DeviceVO> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
-//        Page<Device> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
+        if(!isAdmin(UserContext.getUserId())){
+            deviceQuery.setDeptId(UserContext.getDeptId());
+        }
 
         // 调 JOIN 查询：MP 拦截器会把查询结果 + 总数，填进 pageParam 这个对象
         baseMapper.selectDeviceVoPage(pageParam,deviceQuery);
@@ -104,5 +116,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         // pageParam 已经被填满了，直接返回
         return pageParam;
 
+    }
+
+    private boolean isAdmin(Long userId){
+        return permissionCheckService.hasPerm(userId, "system:role:manage");
     }
 }

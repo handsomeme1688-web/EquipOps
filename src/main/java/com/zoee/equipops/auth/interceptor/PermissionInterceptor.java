@@ -56,7 +56,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
         for(Map.Entry<String, String> entry:PATH_PERMISSION.entrySet()){
             String key=entry.getKey();
             String[] parts=key.split(" ",2);
-            if(method.equals(parts[0]) && uri.startsWith(parts[1])){
+            if(method.equals(parts[0]) && (uri.equals(parts[1]) || uri.startsWith(parts[1] + "/"))){
                 return entry.getValue();
             }
 
