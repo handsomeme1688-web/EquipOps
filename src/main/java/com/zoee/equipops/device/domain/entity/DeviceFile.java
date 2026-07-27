@@ -13,6 +13,6 @@ public class DeviceFile {
     private String storageKey;
     private Long size;
     private String contentType;
-    private Long updateBy;
-    private LocalDateTime updateTime;
+    private Long uploadBy;
+    private LocalDateTime uploadTime;
 }

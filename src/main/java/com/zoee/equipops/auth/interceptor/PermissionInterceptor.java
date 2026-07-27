@@ -59,7 +59,6 @@ public class PermissionInterceptor implements HandlerInterceptor {
             if(method.equals(parts[0]) && (uri.equals(parts[1]) || uri.startsWith(parts[1] + "/"))){
                 return entry.getValue();
             }
-
         }
         return null;
     }
