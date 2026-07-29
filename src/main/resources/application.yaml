@@ -21,6 +21,10 @@ spring:
     # 6. 是否允许出错后清洗/清空数据库（生产环境严禁设为 true！）
     clean-disabled: true
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 jwt:
   secret: ${JWT_SECRET}
   access-token-expire: 7200

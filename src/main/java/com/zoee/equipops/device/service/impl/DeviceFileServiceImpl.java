@@ -83,22 +83,27 @@ public class DeviceFileServiceImpl extends ServiceImpl<DeviceFileMapper, DeviceF
         // 1. 空文件校验
         if(file==null || file.isEmpty()) throw new BizException(ResultCode.BAD_REQUEST);
 
-        // 2. 设备存在校验
+        // 2. 文件大小校验
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new BizException(ResultCode.BAD_REQUEST, "文件大小不能超过 10MB");
+        }
+
+        // 3. 设备存在校验
         Device device = deviceService.getById(deviceId);
         if(device==null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
 
-        // 3. 人员权限校验
+        // 4. 人员权限校验
         if(!isAdmin(UserContext.getUserId()) && !device.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);
         }
 
 
 
-        // 4. MIME类型白名单
+        // 5. MIME类型白名单
         String contentType = file.getContentType();
         if(!ALLOWED_MIME_TYPES.contains(contentType)) throw new BizException(ResultCode.BAD_REQUEST);
 
-        // 5. 扩展名校验
+        // 6. 扩展名校验
         String originalFilename = file.getOriginalFilename();
         if(originalFilename==null) throw new BizException(ResultCode.BAD_REQUEST);
         int index = originalFilename.lastIndexOf(".");
@@ -106,7 +111,7 @@ public class DeviceFileServiceImpl extends ServiceImpl<DeviceFileMapper, DeviceF
         String ext = originalFilename.substring(index);
         if(!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) throw new BizException(ResultCode.BAD_REQUEST);
 
-        // 6. 魔数，防改后缀.不管文件名改成什么，文件内容的前几个字节是改不掉的
+        // 7. 魔数，防改后缀.不管文件名改成什么，文件内容的前几个字节是改不掉的
         try(InputStream is = file.getInputStream()){
             byte[] header = is.readNBytes(8);
             if(!matchMagicNumbers(ext,header)) throw new BizException(ResultCode.BAD_REQUEST);

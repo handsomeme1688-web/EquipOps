@@ -22,7 +22,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .order(1);
         registry.addInterceptor(permissionInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/auth/login", "/auth/register", "/auth/me")
+                .excludePathPatterns(
+                        "/auth/login",
+                        "/auth/register",
+                        "/auth/me",
+                        "/devices/*/files",        // 文件列表：Service 层隔离
+                        "/devices/files/*/download", // 下载：Service 层隔离
+                        "/devices/files/*"
+                )      // 删除：Service 层隔离)
                 .order(2);
     }
 }

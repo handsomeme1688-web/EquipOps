@@ -34,6 +34,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
             "DELETE /devices",                "device:delete",
             "POST /roles",                    "system:role:manage",
             "POST /users",                    "system:user:manage"
+
     );
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
