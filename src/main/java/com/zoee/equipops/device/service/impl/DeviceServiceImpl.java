@@ -16,13 +16,17 @@ import com.zoee.equipops.device.enums.DeviceStatus;
 import com.zoee.equipops.device.mapper.DeviceMapper;
 import com.zoee.equipops.device.service.DeviceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
 public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> implements DeviceService {
 
+    private final RedisTemplate<String,Object> redisTemplate;
     private final PermissionCheckService permissionCheckService;
 
     private DeviceVO toVO(Device device) {
@@ -68,16 +72,17 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     @Transactional(rollbackFor = Exception.class)
     public DeviceVO update(Long id, DeviceUpdateDTO deviceUpdateDTO) {
         Device existDevice=getById(id);
+        if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
-        if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         existDevice.setOwnerId(deviceUpdateDTO.getOwnerId());
         existDevice.setLocation(deviceUpdateDTO.getLocation());
         existDevice.setName(deviceUpdateDTO.getName());
         existDevice.setModel(deviceUpdateDTO.getModel());
         existDevice.setDescription(deviceUpdateDTO.getDescription());
         updateById(existDevice);
+        redisTemplate.delete("device:detail:"+id); // 更新和删除后清缓存
         return toVO(existDevice);
     }
 
@@ -90,16 +95,36 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
         removeById(id);
+        redisTemplate.delete("device:detail:"+id); // 更新和删除后清缓存
     }
 
     @Override
     public DeviceVO detail(Long id) {
-        Device existDevice = getById(id);
-        if (existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
-        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+        String key = "device:detail:"+id;
+        Object cached = redisTemplate.opsForValue().get(key);
+        if (cached==null) {
+            Device existDevice = getById(id);
+            if (existDevice==null) {
+                redisTemplate.opsForValue().set(key,"NULL",Duration.ofSeconds(2*60));
+                throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+            }
+            if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+                throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
+            }
+            int ttl = 30 * 60 + (int) (Math.random() * 300);
+            DeviceVO vo = toVO(existDevice);
+            redisTemplate.opsForValue().set(key,vo, Duration.ofSeconds(ttl));
+            return vo;// 存完 Redis 后 cached 还是 null. cached已经被取出来了,不受后续的修改的影响
+        }
+
+        // 缓存命中
+
+        if ("NULL".equals(cached)) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+        DeviceVO existVO=(DeviceVO) cached;
+        if(!isAdmin(UserContext.getUserId()) && !existVO.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
-        return toVO(existDevice);
+        return existVO;
     }
 
     @Override

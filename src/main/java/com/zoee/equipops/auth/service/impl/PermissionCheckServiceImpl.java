@@ -11,7 +11,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PermissionCheckServiceImpl implements PermissionCheckService {
     private final PermissionService permissionService;
-
     /**
      * - PermissionMapper：只给 PermissionServiceImpl 用（它就是这个 Mapper 的唯一入口）
      * - PermissionServiceImpl：负责 "把用户的权限集查出来变成 Set" 这件事

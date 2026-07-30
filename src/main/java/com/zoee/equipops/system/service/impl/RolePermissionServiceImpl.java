@@ -3,9 +3,14 @@ package com.zoee.equipops.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zoee.equipops.common.exception.BizException;
+import com.zoee.equipops.system.entity.Role;
 import com.zoee.equipops.system.entity.RolePermission;
+import com.zoee.equipops.system.entity.UserRole;
 import com.zoee.equipops.system.mapper.RolePermissionMapper;
+import com.zoee.equipops.system.mapper.UserRoleMapper;
 import com.zoee.equipops.system.service.RolePermissionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,RolePermission> implements RolePermissionService {
+    private final RedisTemplate<String,Object> redisTemplate;
+    private final UserRoleMapper userRoleMapper;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void assignPermission(Long roleId, List<Long> permissionIds) {
@@ -29,6 +38,10 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
                 newList.add(rolePermission);
             }
             saveBatch(newList);
+        }
+        List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getRoleId, roleId));
+        for(UserRole ur  : userRoles){
+            redisTemplate.delete("user:permissions:"+ur.getUserId());
         }
 
 
@@ -49,7 +62,5 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
                  * └─ 拉第3个 pid3 → 进 map 的 lambda → 造出 rp3 → 立刻塞进那个 List
                  * List 建满，返回
                  */
-
-
     }
 }
