@@ -73,7 +73,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     public DeviceVO update(Long id, DeviceUpdateDTO deviceUpdateDTO) {
         Device existDevice=getById(id);
         if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
-        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+        if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
         existDevice.setOwnerId(deviceUpdateDTO.getOwnerId());
@@ -91,7 +91,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     public void delete(Long id) {
         if(getById(id) == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         Device existDevice = getById(id);
-        if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+        if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
         removeById(id);
@@ -108,7 +108,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
                 redisTemplate.opsForValue().set(key,"NULL",Duration.ofSeconds(2*60));
                 throw new BizException(ResultCode.DEVICE_NOT_FOUND);
             }
-            if(!isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
+            if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
                 throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
             }
             int ttl = 30 * 60 + (int) (Math.random() * 300);
@@ -121,7 +121,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
 
         if ("NULL".equals(cached)) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         DeviceVO existVO=(DeviceVO) cached;
-        if(!isAdmin(UserContext.getUserId()) && !existVO.getDeptId().equals(UserContext.getDeptId())){
+        if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existVO.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
         return existVO;
@@ -131,7 +131,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     public Page<DeviceVO> page(DeviceQuery deviceQuery) {
         // 构造分页对象（告诉 MP 查第几页、每页几条）。泛型是 DeviceVO（不再是 Device）
         Page<DeviceVO> pageParam =new Page<>(deviceQuery.getPageNum(),deviceQuery.getPageSize());
-        if(!isAdmin(UserContext.getUserId())){
+        if(!permissionCheckService.isAdmin(UserContext.getUserId())){
             deviceQuery.setDeptId(UserContext.getDeptId());
         }
 
@@ -141,9 +141,5 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         // pageParam 已经被填满了，直接返回
         return pageParam;
 
-    }
-
-    private boolean isAdmin(Long userId){
-        return permissionCheckService.hasPerm(userId, "system:role:manage");
     }
 }

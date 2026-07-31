@@ -25,6 +25,7 @@ public enum ResultCode {
     // ===== 21xxx 工单 =====
     ORDER_NOT_FOUND(21001, 404, "工单不存在"),
     ORDER_STATUS_ILLEGAL(21002, 409, "工单状态流转非法"),
+    ORDER_ALREADY_ACCEPTED(21003, 409, "工单已被他人承接"),
 
     // ===== 30xxx 认证 =====
     USERNAME_EXISTS(30001, 409, "用户名已存在"),

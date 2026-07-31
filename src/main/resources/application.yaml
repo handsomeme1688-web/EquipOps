@@ -39,7 +39,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   access-token-expire: 7200
-
+mybatis-plus:
+  type-enums-package: com.zoee.equipops
 #严格命名规范
 #  src/main/resources/
 #  └── db/
