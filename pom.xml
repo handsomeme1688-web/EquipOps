@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>3.5.16</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.zoee</groupId>
@@ -35,19 +35,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- Jackson Java 8 时间模块（LocalDateTime 序列化） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
         <!-- 参数校验 (@Valid / @NotBlank 等) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- 数据库迁移 -->
-        <!-- Spring Boot 4.x 起，仅有 flyway-core 不再触发自动迁移，
-             必须用 spring-boot-starter-flyway 才会在启动时自动执行迁移
-             （flyway-core 由该 starter 传递引入，无需再单独声明） -->
+        <!-- 数据库迁移（Boot 3.x 用 flyway-core，自动配置接管） -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-flyway</artifactId>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
         </dependency>
         <!-- MySQL 方言模块（Flyway 10+ 起各数据库支持拆成独立模块） -->
         <dependency>
@@ -65,7 +67,7 @@
         <!-- MyBatis-Plus (Spring Boot 4 专用 starter) -->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>3.5.16</version>
         </dependency>
         <!-- 3.5.9 起 JSqlParser 拆为独立模块，分页/乐观锁等需要 SQL 解析的插件必须显式引入 -->
@@ -102,7 +104,8 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.20.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -130,6 +133,16 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
+        </dependency>
+        <!-- Spring Security 6 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- AOP（@OpLog 切面用） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
         </dependency>
     </dependencies>
 

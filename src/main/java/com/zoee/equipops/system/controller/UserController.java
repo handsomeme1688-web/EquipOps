@@ -1,5 +1,6 @@
 package com.zoee.equipops.system.controller;
 
+import com.zoee.equipops.common.annotation.OpLog;
 import com.zoee.equipops.common.result.Result;
 import com.zoee.equipops.system.service.PermissionService;
 import com.zoee.equipops.system.service.UserRoleService;
@@ -17,6 +18,7 @@ public class UserController {
     private final UserRoleService userRoleService;
     private final PermissionService permissionService;
 
+    @OpLog(resourceType = "user", action = "assignRoles")
     @PostMapping("/{userId}/roles")
     public Result<Void> assignRoles(@PathVariable Long userId, @RequestBody List<Long> roleIds) {
         userRoleService.assignRole(userId, roleIds);

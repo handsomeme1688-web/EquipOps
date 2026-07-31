@@ -13,6 +13,7 @@ import com.zoee.equipops.order.domain.entity.RepairOrder;
 import com.zoee.equipops.order.domain.vo.RepairOrderVO;
 import com.zoee.equipops.order.enums.OrderStatus;
 import com.zoee.equipops.order.mapper.RepairOrderMapper;
+import com.zoee.equipops.order.service.OrderStateService;
 import com.zoee.equipops.order.service.RepairOrderService;
 import com.zoee.equipops.system.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     private final DeviceService deviceService;
     private final PermissionCheckService permissionCheckService;
     private final UserService userService; //不能绕过 Service 直接调 Mapper
+    private final OrderStateService orderStateService;
 
     /**
      * 创建设备维修工单
@@ -113,6 +115,54 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         }
 
         throw new BizException(ResultCode.ORDER_ALREADY_ACCEPTED);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public RepairOrderVO updateStatus(Long orderId, OrderStatus orderStatus) {
+        RepairOrder repairOrder = getById(orderId);
+        if (repairOrder==null) throw new BizException(ResultCode.ORDER_NOT_FOUND);
+        orderStateService.validateTransition(repairOrder.getStatus(),orderStatus);
+
+        String requiredPerm = switch (orderStatus) {
+            case ACCEPTED      -> "order:accept";
+            case IN_REPAIR     -> "order:repair";
+            case OUTSOURCED    -> "order:outsource";
+            case PENDING_CHECK -> "order:submit";
+            case COMPLETED     -> "order:audit";
+            case CLOSED        -> "order:cancel";
+            default            -> null;
+        };
+        if (requiredPerm != null
+                && !permissionCheckService.hasPerm(UserContext.getUserId(), requiredPerm)) {
+            throw new BizException(ResultCode.FORBIDDEN);
+        }
+
+        LambdaUpdateWrapper<RepairOrder> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(RepairOrder::getId,orderId)
+                .eq(RepairOrder::getStatus,repairOrder.getStatus())
+                .set(RepairOrder::getStatus,orderStatus)
+                .set(RepairOrder::getAssignId,UserContext.getUserId());
+        boolean success = update(wrapper);
+
+        repairOrder = getById(orderId);// 重读,保证获得新数据
+
+        if (success){
+            RepairOrderVO vo = new RepairOrderVO();
+            vo.setId(repairOrder.getId());
+            vo.setDeviceId(repairOrder.getDeviceId());
+            vo.setRequesterName(userService.getById(repairOrder.getRequestUserId()).getRealName());
+            vo.setRequestTime(repairOrder.getRequestTime());
+            vo.setAssignName(userService.getById(UserContext.getUserId()).getRealName());
+            vo.setStatus(repairOrder.getStatus());
+            vo.setDescription(repairOrder.getDescription());
+            vo.setCreateTime(repairOrder.getCreateTime());
+            vo.setUpdateTime(repairOrder.getUpdateTime());
+            vo.setAcceptTime(repairOrder.getAcceptTime());
+            return vo;
+        }
+
+        throw new BizException(ResultCode.ORDER_STATUS_ILLEGAL);
     }
 
 }

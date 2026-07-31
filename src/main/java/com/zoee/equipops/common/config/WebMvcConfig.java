@@ -1,35 +1,22 @@
 package com.zoee.equipops.common.config;
 
-import com.zoee.equipops.auth.interceptor.LoginInterceptor;
-import com.zoee.equipops.auth.interceptor.PermissionInterceptor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * 旧拦截器已由 Spring Security 接管。
+ * 保留注释掉的代码用于面试对比（手册 Day 16 要求）。
+ */
 @Configuration
-@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    private final LoginInterceptor loginInterceptor;
-    private final PermissionInterceptor permissionInterceptor;
+    // private final LoginInterceptor loginInterceptor;
+    // private final PermissionInterceptor permissionInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns("/auth/login", "/auth/register")
-                .order(1);
-        registry.addInterceptor(permissionInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/register",
-                        "/auth/me",
-                        "/devices/*/files",        // 文件列表：Service 层隔离
-                        "/devices/files/*/download", // 下载：Service 层隔离
-                        "/devices/files/*"
-                )      // 删除：Service 层隔离)
-                .order(2);
+        // Security 接管前：LoginInterceptor 解析 JWT，PermissionInterceptor 校验权限
+        // 现在由 SecurityConfig + JwtAuthenticationFilter + @OpLog 替代
     }
 }

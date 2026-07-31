@@ -26,7 +26,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         String key = "user:permissions:"+userId;
         Object cached = redisTemplate.opsForValue().get(key);
         // 查到就直接返回
-        if(cached!=null){return (Set<String>) cached;}
+        // GenericJackson2JsonRedisSerializer 反序列化后是 ArrayList，强转会崩，用 new HashSet 包装
+        if(cached!=null){return new HashSet<>((java.util.Collection<String>) cached);}
         // 未命中就查数据库,并且写入redis
         HashSet<String> permissions = new HashSet<>(baseMapper.selectPermissionCodesByUser(userId));
         int ttl = 0;

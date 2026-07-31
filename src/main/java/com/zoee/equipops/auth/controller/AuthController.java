@@ -6,6 +6,7 @@ import com.zoee.equipops.auth.domain.vo.CurrentUserVO;
 import com.zoee.equipops.auth.domain.vo.TokenVO;
 import com.zoee.equipops.auth.service.AuthService;
 import com.zoee.equipops.common.context.UserContext;
+import com.zoee.equipops.common.annotation.OpLog;
 import com.zoee.equipops.common.result.Result;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +17,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    @OpLog(resourceType = "auth", action = "login")
     @PostMapping("/login")
     public Result<TokenVO> login(@Valid @RequestBody LoginDTO loginDTO){
         return Result.success(authService.login(loginDTO));
     }
 
+    @OpLog(resourceType = "auth", action = "register")
     @PostMapping("/register")
     public Result<TokenVO> register(@Valid @RequestBody RegisterDTO registerDTO){
         return Result.success(authService.register(registerDTO));
