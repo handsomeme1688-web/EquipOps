@@ -1,6 +1,7 @@
 package com.zoee.equipops.common.config;
 
 import com.zoee.equipops.auth.filter.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,12 +36,14 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(eh->eh
                         .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);// 401
                             response.setContentType("application/json;charset=utf-8");
                             try {
                                 response.getWriter().write("{\"code\":10002,\"msg\":\"未认证\"}");
                             } catch (IOException ignored) {}
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
                             response.setContentType("application/json;charset=utf-8");
                             try {
                                 response.getWriter().write("{\"code\":10003,\"msg\":\"无权限\"}");

@@ -47,17 +47,4 @@ public class DeviceController {
         return Result.success(deviceService.page(deviceQuery));
     }
 
-    /**
-     * 请求进来
-     *   │
-     *   ├─ 一切正常 → Controller: return Result.success()
-     *   │              → Spring 默认包 200 OK → 前端收到 200 + body{code:0}
-     *   │
-     *   └─ 出错 throw BizException
-     *                  → Controller 中断，不 return
-     *                  → GlobalExceptionHandler 接住
-     *                  → return ResponseEntity.status(404).body(Result.error(20001,...))
-     *                  → 前端收到 404 + body{code:20001,msg:"设备不存在"}
-     */
-
 }

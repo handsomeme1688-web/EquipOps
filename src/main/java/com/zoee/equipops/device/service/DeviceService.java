@@ -2,7 +2,6 @@ package com.zoee.equipops.device.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.zoee.equipops.common.result.Result;
 import com.zoee.equipops.device.domain.dto.DeviceCreateDTO;
 import com.zoee.equipops.device.domain.dto.DeviceUpdateDTO;
 import com.zoee.equipops.device.domain.entity.Device;

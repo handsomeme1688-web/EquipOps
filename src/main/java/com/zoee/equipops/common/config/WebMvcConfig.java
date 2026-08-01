@@ -4,10 +4,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * 旧拦截器已由 Spring Security 接管。
- * 保留注释掉的代码用于面试对比（手册 Day 16 要求）。
- */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 

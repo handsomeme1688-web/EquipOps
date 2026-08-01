@@ -26,13 +26,8 @@ public class DeviceFileController {
 
     /**
      * 这个统一返回的约定有个唯一例外：当响应体不是 JSON 时。
-     *
      * download 返回的是文件字节流（Content-Type: image/jpeg），Result 是 JSON 包装（Content-Type: application/json）
      * 把二进制文件塞进 JSON 的 data 字段里技术上可行（Base64 编码），但文件体积膨胀 33%，而且前端拿到了要再解码，没有任何人这样做。
-     * @param fileId
-     * @param response
-     * @return
-     * @throws IOException
      */
     @GetMapping("/files/{fileId}/download")
     public void download(@PathVariable Long fileId, HttpServletResponse response) throws IOException {

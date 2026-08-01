@@ -2,6 +2,8 @@ package com.zoee.equipops.auth.controller;
 
 import com.zoee.equipops.TestcontainersConfiguration;
 import com.zoee.equipops.auth.util.JwtUtil;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @Transactional
-@DisplayName("认证接口集成测试（Day 11）")
+@DisplayName("认证接口集成测试")
 class AuthControllerIT {
 
     @Autowired
@@ -88,7 +91,7 @@ class AuthControllerIT {
     // 真实 HTTP 环境（RANDOM_PORT）下 Security 配置正常工作
 
     @Test
-    @Disabled("MockMvc anonymous auth bypass — Security config verified in real server mode")
+//    @Disabled("MockMvc anonymous auth bypass — Security config verified in real server mode")
     @DisplayName("不带 Authorization 头访问受保护接口 → 401")
     void shouldReturn401WhenNoToken() throws Exception {
         mockMvc.perform(get("/devices/page"))
@@ -109,5 +112,21 @@ class AuthControllerIT {
                 .andExpect(jsonPath("$.data.username").value("admin"))
                 .andExpect(jsonPath("$.data.realName").value("系统管理员"))
                 .andExpect(jsonPath("$.data.permissions").isArray());
+    }
+
+    // 5 非法token
+    @Test
+    @DisplayName("非法 Token 访问受保护接口返回 401")
+    void shouldReturn401WhenTokenInvalid() throws Exception {
+        String expiredToken = Jwts.builder()
+                .setClaims(Map.of("userId", 1L, "deptId", 1L))
+                .setExpiration(new Date(System.currentTimeMillis() - 1000))
+                .signWith(SignatureAlgorithm.HS256, jwtUtil.getSecret())
+                .compact();
+
+
+        mockMvc.perform(get("/devices/page").header("Authorization",expiredToken))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(10002));
     }
 }
