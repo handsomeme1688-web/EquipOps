@@ -19,12 +19,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
 public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> implements DeviceService {
+
+    private static final String DEVICE_CACHE_PREFIX = "device:detail:";
+    private static final String DEVICE_NULL_CACHE_PREFIX = "device:detail:null:";
 
     private final RedisTemplate<String,Object> redisTemplate;
     private final PermissionCheckService permissionCheckService;
@@ -82,30 +87,36 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         existDevice.setModel(deviceUpdateDTO.getModel());
         existDevice.setDescription(deviceUpdateDTO.getDescription());
         updateById(existDevice);
-        redisTemplate.delete("device:detail:"+id); // 更新和删除后清缓存
+        evictDetailCacheAfterCommit(id);
         return toVO(existDevice);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        if(getById(id) == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         Device existDevice = getById(id);
+        if(existDevice == null) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
         }
         removeById(id);
-        redisTemplate.delete("device:detail:"+id); // 更新和删除后清缓存
+        evictDetailCacheAfterCommit(id);
     }
 
     @Override
     public DeviceVO detail(Long id) {
-        String key = "device:detail:"+id;
+        String key = detailCacheKey(id);
+        String nullKey = nullDetailCacheKey(id);
+
+        if (Boolean.TRUE.equals(redisTemplate.opsForValue().get(nullKey))) {
+            throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+        }
+
         Object cached = redisTemplate.opsForValue().get(key);
         if (cached==null) {
             Device existDevice = getById(id);
             if (existDevice==null) {
-                redisTemplate.opsForValue().set(key,"NULL",Duration.ofSeconds(2*60));
+                redisTemplate.opsForValue().set(nullKey, Boolean.TRUE, Duration.ofSeconds(2 * 60));
                 throw new BizException(ResultCode.DEVICE_NOT_FOUND);
             }
             if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
@@ -114,12 +125,9 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
             int ttl = 30 * 60 + (int) (Math.random() * 300);
             DeviceVO vo = toVO(existDevice);
             redisTemplate.opsForValue().set(key,vo, Duration.ofSeconds(ttl));
-            return vo;// 存完 Redis 后 cached 还是 null. cached已经被取出来了,不受后续的修改的影响
+            return vo;
         }
 
-        // 缓存命中
-
-        if ("NULL".equals(cached)) throw new BizException(ResultCode.DEVICE_NOT_FOUND);
         DeviceVO existVO=(DeviceVO) cached;
         if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existVO.getDeptId().equals(UserContext.getDeptId())){
             throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
@@ -141,5 +149,31 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         // pageParam 已经被填满了，直接返回
         return pageParam;
 
+    }
+
+    private void evictDetailCacheAfterCommit(Long id) {
+        Runnable evict = () -> {
+            redisTemplate.delete(detailCacheKey(id));
+            redisTemplate.delete(nullDetailCacheKey(id));
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evict.run();
+                }
+            });
+            return;
+        }
+        evict.run();
+    }
+
+    private String detailCacheKey(Long id) {
+        return DEVICE_CACHE_PREFIX + id;
+    }
+
+    private String nullDetailCacheKey(Long id) {
+        return DEVICE_NULL_CACHE_PREFIX + id;
     }
 }

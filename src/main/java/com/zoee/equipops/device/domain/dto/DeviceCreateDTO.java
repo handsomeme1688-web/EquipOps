@@ -10,7 +10,6 @@ public class DeviceCreateDTO {
     @NotNull(message = "设备责任人不能为空")
     private Long ownerId;
 
-    // @NotNull 只挡 null，@NotBlank 顺便连空格一起挡了。
     @NotBlank(message = "设备编号不能为空")
     @Size(max = 50)
     private String code;

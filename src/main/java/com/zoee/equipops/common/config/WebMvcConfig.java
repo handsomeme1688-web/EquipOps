@@ -6,13 +6,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
-
-    // private final LoginInterceptor loginInterceptor;
-    // private final PermissionInterceptor permissionInterceptor;
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Security 接管前：LoginInterceptor 解析 JWT，PermissionInterceptor 校验权限
-        // 现在由 SecurityConfig + JwtAuthenticationFilter + @OpLog 替代
+        // 认证和接口权限由 Spring Security 过滤链及方法级授权负责。
     }
 }

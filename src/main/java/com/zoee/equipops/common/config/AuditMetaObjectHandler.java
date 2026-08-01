@@ -3,6 +3,8 @@ package com.zoee.equipops.common.config;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.zoee.equipops.common.context.UserContext;
 import org.apache.ibatis.reflection.MetaObject;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -31,13 +33,13 @@ public class AuditMetaObjectHandler implements MetaObjectHandler {
 
 
 
-    /**
-     * 获取当前登录用户 id。
-     * TODO  升级为从 SecurityContextHolder 取
-     * 现在没有登录体系，先返回固定值。
-     */
     private Long getCurrentUserId() {
-
-        return UserContext.getUserId();//暂时写死
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof Long userId) {
+            return userId;
+        }
+        return UserContext.getUserId();
     }
 }

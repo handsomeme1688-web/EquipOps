@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Day 9 集成测试：组合查询、索引与 SQL 证据。
+ * 设备组合查询、索引与 SQL 证据集成测试。
  *
  * <p>用 Testcontainers 起真 MySQL，验证：
  * <ol>
@@ -33,12 +33,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 类级 @Transactional 保证每个测试方法执行后自动回滚，测试间互不污染。
  *
  * @author zoe
- * @since 2026-07-25 Day 9
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
-@DisplayName("设备组合查询集成测试（Day 9）")
+@DisplayName("设备组合查询集成测试")
 class DeviceServiceIT {
 
     @Autowired
@@ -67,7 +66,7 @@ class DeviceServiceIT {
 
     /**
      * 直接调 IService.save() 插入设备。
-     * 不走 DeviceService.create：create 内部 deptId 硬编码为 2L（Day 11 才切到 UserContext），
+     * 不走 DeviceService.create：测试需要构造多个部门的数据，
      * 且含编号重复校验——测试数据构造应走最短路径。
      */
     private Device saveDevice(String code, String name, String model,

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Day 14 缓存击穿实验。
+ * 缓存击穿实验。
  *
  * <p>对比两种方案的并发行为：
  * <ul>
@@ -28,11 +28,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>验证目标：50 并发未命中同一 key，只有 1 次真正查库。
  *
- * <p>实验代码放在 src/test 下，不混入生产 Service（手册要求）。
+ * <p>实验代码放在 src/test 下，不混入生产 Service。
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@DisplayName("缓存击穿实验（Day 14）")
+@DisplayName("缓存击穿实验")
 class CacheBreakdownExperimentIT {
 
     @Autowired

@@ -5,6 +5,7 @@ import com.zoee.equipops.common.result.Result;
 import com.zoee.equipops.system.service.PermissionService;
 import com.zoee.equipops.system.service.UserRoleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class UserController {
     private final PermissionService permissionService;
 
     @OpLog(resourceType = "user", action = "assignRoles")
+    @PreAuthorize("hasAuthority('system:role:manage')")
     @PostMapping("/{userId}/roles")
     public Result<Void> assignRoles(@PathVariable Long userId, @RequestBody List<Long> roleIds) {
         userRoleService.assignRole(userId, roleIds);
@@ -26,6 +28,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/permissions")
+    @PreAuthorize("hasAuthority('system:role:view')")
     public Result<Set<String>> getPermissions(@PathVariable Long userId){
         return Result.success(permissionService.listPermissionCodesByUser(userId));
     }

@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Day 15 工单并发实验。
+ * 工单并发控制实验。
  *
  * <p>对同一条 PENDING 工单发起 50 个并发抢单，验证只有 1 个胜出。
  * 横向对比三种并发控制方案：
@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@DisplayName("工单并发控制实验（Day 15）")
+@DisplayName("工单并发控制实验")
 class OrderConcurrencyExperimentIT {
 
     @Autowired

@@ -15,13 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Day 13 设备缓存集成测试。
+ * 设备缓存集成测试。
  *
  * <p>用 Testcontainers 起真 MySQL + Redis，验证：
  * <ol>
@@ -33,8 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@Transactional
-@DisplayName("设备缓存集成测试（Day 13）")
+@DisplayName("设备缓存集成测试")
 class DeviceCacheIT {
 
     @Autowired
@@ -45,6 +43,7 @@ class DeviceCacheIT {
 
     private Long deviceId;
     private String cacheKey;
+    private String nullCacheKey;
 
     @BeforeEach
     void setUp() {
@@ -64,14 +63,20 @@ class DeviceCacheIT {
         deviceService.save(device);
         deviceId = device.getId();
         cacheKey = "device:detail:" + deviceId;
+        nullCacheKey = "device:detail:null:" + deviceId;
 
         // 确保缓存起始是干净的
         redisTemplate.delete(cacheKey);
+        redisTemplate.delete(nullCacheKey);
     }
 
     @AfterEach
     void tearDown() {
+        if (deviceId != null) {
+            deviceService.removeById(deviceId);
+        }
         redisTemplate.delete(cacheKey);
+        redisTemplate.delete(nullCacheKey);
         UserContext.remove();
     }
 
@@ -134,20 +139,23 @@ class DeviceCacheIT {
     @DisplayName("④ 查不存在的设备 → 空标记缓存 → 再次查不穿透")
     void shouldCacheNullMarkerForNonExistentDevice() {
         String ghostKey = "device:detail:99999";
+        String ghostNullKey = "device:detail:null:99999";
         redisTemplate.delete(ghostKey);
+        redisTemplate.delete(ghostNullKey);
 
         // 第一次查不存在设备
         assertThatThrownBy(() -> deviceService.detail(99999L))
                 .isInstanceOf(BizException.class);
 
-        // 空标记已缓存
-        assertThat(redisTemplate.hasKey(ghostKey)).isTrue();
-        assertThat(redisTemplate.opsForValue().get(ghostKey)).isEqualTo("NULL");
+        // 空标记使用独立 key，避免与 DeviceVO 混用同一个 value 类型
+        assertThat(redisTemplate.hasKey(ghostKey)).isFalse();
+        assertThat(redisTemplate.opsForValue().get(ghostNullKey)).isEqualTo(true);
 
         // 第二次查 → 同样抛异常（走缓存，不透到 DB）
         assertThatThrownBy(() -> deviceService.detail(99999L))
                 .isInstanceOf(BizException.class);
 
         redisTemplate.delete(ghostKey);
+        redisTemplate.delete(ghostNullKey);
     }
 }

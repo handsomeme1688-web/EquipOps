@@ -1,103 +1,93 @@
 package com.zoee.equipops.order.service;
 
 import com.zoee.equipops.common.exception.BizException;
+import com.zoee.equipops.common.result.ResultCode;
+import com.zoee.equipops.order.enums.OrderStatus;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.zoee.equipops.order.enums.OrderStatus.*;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Stream;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static com.zoee.equipops.order.enums.OrderStatus.ACCEPTED;
+import static com.zoee.equipops.order.enums.OrderStatus.CLOSED;
+import static com.zoee.equipops.order.enums.OrderStatus.COMPLETED;
+import static com.zoee.equipops.order.enums.OrderStatus.IN_REPAIR;
+import static com.zoee.equipops.order.enums.OrderStatus.OUTSOURCED;
+import static com.zoee.equipops.order.enums.OrderStatus.PENDING;
+import static com.zoee.equipops.order.enums.OrderStatus.PENDING_CHECK;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * 记住一个决策树就够了
- *
- * 被测方法是 void 吗？
- * ├── 是 → 你关心它会炸还是不会炸？
- * │        ├── 应该不炸   → assertThatCode(lambda)
- * │        └── 应该炸     → assertThatThrownBy(lambda)
- * └── 不是（有返回值）     → assertThat(value)
- *
- * 补充：assertThatThrownBy 和 assertThatCode 的关系
- *
- * assertThatCode 其实是父集，它也能测异常：
- *
- * assertThatCode(() -> service.validateTransition(PENDING, COMPLETED))
- *     .isInstanceOf(IllegalStateException.class)
- *     .hasMessageContaining("非法的工单状态流转");
- *
- * 但 assertThatThrownBy 更语义化——方法名就表达了"我预期它会炸"，读起来更清晰。如果你的测试就是测异常场景，用它更直接。
- *
- */
-public class OrderStateServiceTest {
-    @Test
-    void validateTransition_合法流转_待受理到已接单_不抛异常() {
-        // 不需要注入
-        OrderStateService service = new OrderStateService();
-        // 测代码不抛异常 → assertThatCode(lambda)
-        assertThatCode(() -> service.validateTransition(PENDING, ACCEPTED))
+class OrderStateServiceTest {
+    private final OrderStateService service = new OrderStateService();
+
+    @ParameterizedTest(name = "{0} -> {1} 应允许")
+    @MethodSource("legalTransitions")
+    void shouldAllowLegalTransitions(OrderStatus from, OrderStatus to) {
+        assertThatCode(() -> service.validateTransition(from, to))
                 .doesNotThrowAnyException();
+        assertThat(service.canTransit(from, to)).isTrue();
     }
 
-
-    @Test
-    void validateTransition_合法流转_待受理到关闭_不抛异常() {
-        OrderStateService service =new OrderStateService();
-        assertThatCode(()->{service.validateTransition(PENDING,CLOSED);})
-                .doesNotThrowAnyException();
-    }
-
-
-    @Test
-    void validateTransition_合法流转_已接单到关闭_不抛异常(){
-        OrderStateService orderStateService = new OrderStateService();
-        assertThatCode(()->{orderStateService.validateTransition(ACCEPTED,CLOSED);})
-                .doesNotThrowAnyException();
-    }
-
-
-    @Test
-    void validateTransition_合法流转_已接单到维修中_不抛异常(){
-        OrderStateService orderStateService=new OrderStateService();
-        assertThatCode(()->{orderStateService.validateTransition(ACCEPTED,IN_REPAIR);})
-                .doesNotThrowAnyException();
-    }
-
-
-    @Test
-    void validateTransition_非法流转_待受理到已完成() {
-        OrderStateService service = new OrderStateService();
-        // 测代码抛了指定异常 → assertThatThrownBy(lambda)
-        assertThatThrownBy(() -> service.validateTransition(PENDING, COMPLETED))
+    @ParameterizedTest(name = "{0} -> {1} 应拒绝")
+    @MethodSource("illegalTransitions")
+    void shouldRejectIllegalTransitions(OrderStatus from, OrderStatus to) {
+        assertThatThrownBy(() -> service.validateTransition(from, to))
                 .isInstanceOf(BizException.class)
-                .hasMessageContaining("非法的工单状态流转");
+                .satisfies(error -> assertThat(((BizException) error).getResultCode())
+                        .isEqualTo(ResultCode.ORDER_STATUS_ILLEGAL));
+        assertThat(service.canTransit(from, to)).isFalse();
     }
 
-
     @Test
-    void validateTransition_非法流转_已接单到待验收_抛异常(){
-        OrderStateService orderStateService=new OrderStateService();
-        assertThatThrownBy(()->{orderStateService.validateTransition(ACCEPTED,PENDING_CHECK);})
+    void shouldRejectNullTransitionWithBadRequest() {
+        assertThatThrownBy(() -> service.validateTransition(null, PENDING))
                 .isInstanceOf(BizException.class)
-                .hasMessageContaining("非法的工单状态流转");
+                .satisfies(error -> assertThat(((BizException) error).getResultCode())
+                        .isEqualTo(ResultCode.BAD_REQUEST));
     }
 
-
     @Test
-    void allowedTargets_待受理_返回已接单和已关闭() {
-        OrderStateService service = new OrderStateService();
-        // 测值 → assertThat(value)
+    void shouldReturnAllowedTargetsAndTerminalStates() {
         assertThat(service.allowedTargets(PENDING))
                 .containsExactlyInAnyOrder(ACCEPTED, CLOSED);
+        assertThat(service.allowedTargets(COMPLETED)).isEmpty();
+        assertThat(service.allowedTargets(CLOSED)).isEmpty();
+        assertThat(service.isTerminal(COMPLETED)).isTrue();
+        assertThat(service.isTerminal(CLOSED)).isTrue();
+        assertThat(service.allowedTargets(null)).isEqualTo(Collections.emptySet());
     }
 
+    private static Stream<Arguments> legalTransitions() {
+        return Stream.of(
+                Arguments.of(PENDING, ACCEPTED),
+                Arguments.of(PENDING, CLOSED),
+                Arguments.of(ACCEPTED, IN_REPAIR),
+                Arguments.of(ACCEPTED, CLOSED),
+                Arguments.of(IN_REPAIR, PENDING_CHECK),
+                Arguments.of(IN_REPAIR, OUTSOURCED),
+                Arguments.of(OUTSOURCED, PENDING_CHECK),
+                Arguments.of(OUTSOURCED, CLOSED),
+                Arguments.of(PENDING_CHECK, COMPLETED),
+                Arguments.of(PENDING_CHECK, IN_REPAIR)
+        );
+    }
 
-    @Test
-    void allowedTargets_维修中_返回委外中和待验收() {
-        OrderStateService orderStateService=new OrderStateService();
-        assertThat(orderStateService.allowedTargets(IN_REPAIR))
-                .containsExactlyInAnyOrder(OUTSOURCED,PENDING_CHECK);
+    private static Stream<Arguments> illegalTransitions() {
+        Set<OrderStatus> terminalStates = Set.of(COMPLETED, CLOSED);
+        return Stream.concat(
+                Stream.of(
+                        Arguments.of(PENDING, COMPLETED),
+                        Arguments.of(ACCEPTED, PENDING_CHECK),
+                        Arguments.of(IN_REPAIR, COMPLETED),
+                        Arguments.of(PENDING_CHECK, CLOSED)
+                ),
+                terminalStates.stream().map(status -> Arguments.of(status, PENDING))
+        );
     }
 }

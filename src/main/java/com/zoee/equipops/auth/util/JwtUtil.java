@@ -23,7 +23,6 @@ public class JwtUtil {
     public String generateJwt(Map<String,Object> claim){
         return Jwts.builder()
                 .signWith(SignatureAlgorithm.HS256,secret)
-//                .setClaims(claim)
                 .setClaims(new HashMap<>(claim))
                 .setExpiration(new Date(System.currentTimeMillis() + expireSeconds*1000 ))
                 .compact();

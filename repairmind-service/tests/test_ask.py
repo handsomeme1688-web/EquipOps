@@ -4,11 +4,11 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_ask_echo():
+def test_ask_stub_response():
     resp = client.post("/ask", json={"question": "水泵不转了怎么办？", "tenant_id": "dept-2"})
     assert resp.status_code == 200
     data = resp.json()
-    assert "echo" in data["answer"]
+    assert data["answer"].startswith("[stub]")
     assert data["request_id"] != ""
 
 

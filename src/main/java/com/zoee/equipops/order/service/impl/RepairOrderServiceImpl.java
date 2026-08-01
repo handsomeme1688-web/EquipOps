@@ -15,10 +15,13 @@ import com.zoee.equipops.order.enums.OrderStatus;
 import com.zoee.equipops.order.mapper.RepairOrderMapper;
 import com.zoee.equipops.order.service.OrderStateService;
 import com.zoee.equipops.order.service.RepairOrderService;
+import com.zoee.equipops.system.entity.User;
 import com.zoee.equipops.system.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -38,6 +41,19 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     @Override
     @Transactional(rollbackFor = Exception.class)
     public RepairOrderVO create(RepairOrderDTO repairOrderDTO) {
+        if (!StringUtils.hasText(repairOrderDTO.getIdempotencyKey())) {
+            throw new BizException(ResultCode.BAD_REQUEST, "幂等键不能为空");
+        }
+
+        Long userId = UserContext.getUserId();
+        RepairOrder existingOrder = lambdaQuery()
+                .eq(RepairOrder::getRequestUserId, userId)
+                .eq(RepairOrder::getIdempotencyKey, repairOrderDTO.getIdempotencyKey())
+                .one();
+        if (existingOrder != null) {
+            return toVO(existingOrder);
+        }
+
         //校验设备是否存在
         Device existsDevice = deviceService.getById(repairOrderDTO.getDeviceId());
         if (existsDevice == null)throw new BizException(ResultCode.DEVICE_NOT_FOUND); // 设备不存在
@@ -48,29 +64,59 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         // 创建新工单
         RepairOrder repairOrder = new RepairOrder();
         repairOrder.setDeviceId(repairOrderDTO.getDeviceId());
-        repairOrder.setRequestUserId(UserContext.getUserId());
+        repairOrder.setRequestUserId(userId);
         repairOrder.setRequestTime(LocalDateTime.now());
         repairOrder.setVersion(0); // 乐观锁是每次更新 +1，创建时从 0 开始。
 
-        // TODO  先用 UUID 占位
-        repairOrder.setIdempotencyKey(java.util.UUID.randomUUID().toString()); // 幂等也没配置
+        repairOrder.setIdempotencyKey(repairOrderDTO.getIdempotencyKey());
 
         repairOrder.setDeptId(UserContext.getDeptId());
         repairOrder.setStatus(OrderStatus.PENDING);
         repairOrder.setDescription(repairOrderDTO.getDescription());
         repairOrder.setPriority(repairOrderDTO.getPriority());
-        repairOrder.setCreateBy(UserContext.getUserId());
+        repairOrder.setCreateBy(userId);
         repairOrder.setCreateTime(LocalDateTime.now());
-        save(repairOrder);
 
+        try {
+            save(repairOrder);
+        } catch (DuplicateKeyException e) {
+            RepairOrder concurrentOrder = lambdaQuery()
+                    .eq(RepairOrder::getRequestUserId, userId)
+                    .eq(RepairOrder::getIdempotencyKey, repairOrderDTO.getIdempotencyKey())
+                    .one();
+            if (concurrentOrder != null) {
+                return toVO(concurrentOrder);
+            }
+            throw new BizException(ResultCode.ORDER_IDEMPOTENCY_CONFLICT);
+        }
+
+        return toVO(repairOrder, existsDevice);
+    }
+
+    private RepairOrderVO toVO(RepairOrder order) {
+        Device device = deviceService.getById(order.getDeviceId());
+        if (device == null) {
+            throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+        }
+        return toVO(order, device);
+    }
+
+    private RepairOrderVO toVO(RepairOrder order, Device device) {
         RepairOrderVO vo = new RepairOrderVO();
-        vo.setId(repairOrder.getId());
-        vo.setDeviceId(existsDevice.getId());
-        vo.setRequesterName(userService.getById(UserContext.getUserId()).getRealName());
-        vo.setRequestTime(repairOrder.getRequestTime());
-        vo.setStatus(repairOrder.getStatus());
-        vo.setDescription(repairOrderDTO.getDescription());
-        vo.setCreateTime(repairOrder.getCreateTime());
+        vo.setId(order.getId());
+        vo.setDeviceId(device.getId());
+        User requester = userService.getById(order.getRequestUserId());
+        vo.setRequesterName(requester == null ? "未知" : requester.getRealName());
+        vo.setRequestTime(order.getRequestTime());
+        vo.setStatus(order.getStatus());
+        vo.setDescription(order.getDescription());
+        vo.setCreateTime(order.getCreateTime());
+        vo.setUpdateTime(order.getUpdateTime());
+        vo.setAcceptTime(order.getAcceptTime());
+        if (order.getAssignId() != null) {
+            User assignee = userService.getById(order.getAssignId());
+            vo.setAssignName(assignee == null ? "未知" : assignee.getRealName());
+        }
         return vo;
     }
 
@@ -98,7 +144,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
                 .set(RepairOrder::getAcceptTime,LocalDateTime.now())
                 .setSql("version = version + 1");
         boolean success = update(wrapper);
-        repairOrder = getById(orderId);// 重读,保证获得新数据
+        repairOrder = getById(orderId);
         if (success){
             RepairOrderVO vo = new RepairOrderVO();
             vo.setId(repairOrder.getId());
@@ -145,7 +191,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
                 .set(RepairOrder::getAssignId,UserContext.getUserId());
         boolean success = update(wrapper);
 
-        repairOrder = getById(orderId);// 重读,保证获得新数据
+        repairOrder = getById(orderId);
 
         if (success){
             RepairOrderVO vo = new RepairOrderVO();

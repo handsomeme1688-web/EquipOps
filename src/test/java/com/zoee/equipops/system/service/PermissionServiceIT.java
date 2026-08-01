@@ -14,7 +14,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Day 10 集成测试：多角色权限并集。
+ * 多角色权限并集集成测试。
  *
  * <p>验证 user_role 表真正的多对多能力——
  * 一个用户绑两个角色时，权限集是两个角色权限的并集，而非只取其一。
@@ -23,12 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 种子数据（zhangsan 仅 EMPLOYEE）不变，不影响其他测试。
  *
  * @author zoe
- * @since 2026-07-25 Day 10
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
-@DisplayName("多角色权限并集集成测试（Day 10）")
+@DisplayName("多角色权限并集集成测试")
 class PermissionServiceIT {
 
     @Autowired

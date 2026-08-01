@@ -9,13 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Map;
 
@@ -25,9 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Day 11 数据隔离集成测试。
+ * 设备数据隔离与接口权限集成测试。
  *
- * <p>覆盖手册要求的 5 条权限与隔离测试：
+ * <p>覆盖认证、接口权限和部门隔离的关键行为：
  * <ol>
  *   <li>无 token → 401</li>
  *   <li>有 token 无权限（普通员工想创建设备）→ 403</li>
@@ -43,24 +42,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </pre>
  *
  * @author zoe
- * @since 2026-07-25 Day 11
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @Transactional
-@DisplayName("设备数据隔离集成测试（Day 11）")
+@DisplayName("设备数据隔离集成测试")
 class DeviceIsolationIT {
-
-    @Autowired
-    private WebApplicationContext wac;
 
     @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
     private DeviceService deviceService;
 
-    private MockMvc mockMvc;
     private String zhangsanToken;
     private String adminToken;
     private Long dept2DeviceId;
@@ -68,9 +66,6 @@ class DeviceIsolationIT {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
-
-        // ── 生成 JWT ──
         zhangsanToken = "Bearer " + jwtUtil.generateJwt(
                 Map.of("userId", 2L, "deptId", 2L));
         adminToken = "Bearer " + jwtUtil.generateJwt(
@@ -108,7 +103,8 @@ class DeviceIsolationIT {
     @DisplayName("不带 Authorization 头请求设备列表 → 401")
     void shouldReturn401WhenNoToken() throws Exception {
         mockMvc.perform(get("/devices/page"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(10002));
     }
 
     // ──────────────── ② 有 token 无权限 → 403 ────────────────
@@ -125,11 +121,12 @@ class DeviceIsolationIT {
                     "location": "某处"
                 }""";
 
-        mockMvc.perform(post("/devices")
+                mockMvc.perform(post("/devices")
                         .header("Authorization", zhangsanToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(10003));
     }
 
     // ──────────────── ③ 跨部门列表隔离 ────────────────

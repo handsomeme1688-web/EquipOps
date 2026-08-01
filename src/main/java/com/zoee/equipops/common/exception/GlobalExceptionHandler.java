@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ① 拦截业务异常
     @ExceptionHandler(BizException.class)
     public ResponseEntity<Result<Void>>  handleBizException(BizException e){
         ResultCode resultCode = e.getResultCode();
@@ -18,7 +17,4 @@ public class GlobalExceptionHandler {
                 .body(Result.error(resultCode.getCode(),e.getMessage()));
     }
 
-    // ② 拦截参数校验失败
-
-    // ③ 兜底：意料之外的异常
 }

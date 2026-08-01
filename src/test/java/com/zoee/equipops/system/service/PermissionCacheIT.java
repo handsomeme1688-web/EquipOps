@@ -17,7 +17,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Day 13 权限缓存集成测试。
+ * 权限缓存集成测试。
  *
  * <p>用 Testcontainers 起真 MySQL + Redis，验证：
  * <ol>
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
-@DisplayName("权限缓存集成测试（Day 13）")
+@DisplayName("权限缓存集成测试")
 class PermissionCacheIT {
 
     @Autowired

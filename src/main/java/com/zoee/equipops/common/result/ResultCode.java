@@ -26,6 +26,7 @@ public enum ResultCode {
     ORDER_NOT_FOUND(21001, 404, "工单不存在"),
     ORDER_STATUS_ILLEGAL(21002, 409, "工单状态流转非法"),
     ORDER_ALREADY_ACCEPTED(21003, 409, "工单已被他人承接"),
+    ORDER_IDEMPOTENCY_CONFLICT(21004, 409, "幂等键冲突"),
 
     // ===== 30xxx 认证 =====
     USERNAME_EXISTS(30001, 409, "用户名已存在"),
@@ -46,4 +47,3 @@ public enum ResultCode {
     public int getHttpStatus() { return httpStatus; }
     public String getMessage() { return message; }
 }
-
