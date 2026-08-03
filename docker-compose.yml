@@ -1,0 +1,14 @@
+services:
+  repairmind:
+    build:
+      context: ./repairmind-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      RM_LLM_STUB: "${RM_LLM_STUB:-1}"
+      RM_LLM_API_KEY: "${RM_LLM_API_KEY:-}"
+      RM_LLM_BASE_URL: "${RM_LLM_BASE_URL:-https://api.deepseek.com}"
+      RM_LLM_MODEL: "${RM_LLM_MODEL:-deepseek-chat}"
+      RM_LLM_CONNECT_TIMEOUT: "${RM_LLM_CONNECT_TIMEOUT:-3.0}"
+      RM_LLM_READ_TIMEOUT: "${RM_LLM_READ_TIMEOUT:-30.0}"

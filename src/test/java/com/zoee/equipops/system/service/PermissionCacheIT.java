@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -31,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@Transactional
 @DisplayName("权限缓存集成测试")
 class PermissionCacheIT {
 
@@ -52,11 +50,13 @@ class PermissionCacheIT {
     @BeforeEach
     void setUp() {
         cacheKey = "user:permissions:" + TEST_USER_ID;
+        userRoleService.assignRole(TEST_USER_ID, List.of(1L));
         redisTemplate.delete(cacheKey);
     }
 
     @AfterEach
     void tearDown() {
+        userRoleService.assignRole(TEST_USER_ID, List.of(1L));
         redisTemplate.delete(cacheKey);
     }
 
@@ -113,7 +113,5 @@ class PermissionCacheIT {
         // 缓存已回填新值
         assertThat(redisTemplate.hasKey(cacheKey)).isTrue();
 
-        // 还原：把 zhangsan 改回 EMPLOYEE，避免污染其他测试
-        userRoleService.assignRole(TEST_USER_ID, List.of(1L));
     }
 }

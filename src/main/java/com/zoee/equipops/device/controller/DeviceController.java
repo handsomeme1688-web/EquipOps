@@ -9,13 +9,16 @@ import com.zoee.equipops.device.domain.query.DeviceQuery;
 import com.zoee.equipops.device.domain.vo.DeviceVO;
 import com.zoee.equipops.device.service.DeviceService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/devices")
+@Validated
 public class DeviceController {
     private final DeviceService deviceService;
 
@@ -29,27 +32,27 @@ public class DeviceController {
     @OpLog(resourceType = "device", action = "update")
     @PreAuthorize("hasAuthority('device:update')")
     @PutMapping("/{id}")
-    public Result<DeviceVO> updateDevice(@PathVariable Long id,@Valid @RequestBody DeviceUpdateDTO deviceUpdateDTO){
+    public Result<DeviceVO> updateDevice(@PathVariable @Positive(message = "设备 ID 必须为正数") Long id,@Valid @RequestBody DeviceUpdateDTO deviceUpdateDTO){
         return Result.success(deviceService.update(id,deviceUpdateDTO));
     }
 
     @OpLog(resourceType = "device", action = "delete")
     @PreAuthorize("hasAuthority('device:delete')")
     @DeleteMapping("/{id}")
-    public Result<Void> deleteDevice(@PathVariable Long id){
+    public Result<Void> deleteDevice(@PathVariable @Positive(message = "设备 ID 必须为正数") Long id){
         deviceService.delete(id);
         return Result.success();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('device:view')")
-    public Result<DeviceVO> detailDevice(@PathVariable Long id){
+    public Result<DeviceVO> detailDevice(@PathVariable @Positive(message = "设备 ID 必须为正数") Long id){
         return Result.success(deviceService.detail(id));
     }
 
     @GetMapping("/page")
     @PreAuthorize("hasAuthority('device:view')")
-    public Result<Page<DeviceVO>> pageDevice(@ModelAttribute DeviceQuery deviceQuery){
+    public Result<Page<DeviceVO>> pageDevice(@Valid @ModelAttribute DeviceQuery deviceQuery){
         return Result.success(deviceService.page(deviceQuery));
     }
 

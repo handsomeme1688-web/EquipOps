@@ -1,0 +1,12 @@
+title = "EquipOps gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore generated build output and local runtime logs"
+paths = [
+  '''(^|/)target/''',
+  '''(^|/)logs/''',
+  '''(^|/)[^/]+\.log$''',
+]

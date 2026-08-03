@@ -1,0 +1,11 @@
+spring:
+  data:
+    redis:
+      password: ""
+jwt:
+  secret: "equipops-test-only-jwt-secret-at-least-32-bytes"
+  access-token-expire: 7200
+equipops:
+  order:
+    timeout-scan:
+      enabled: false

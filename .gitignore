@@ -44,7 +44,15 @@ src/main/resources/application-local.*
 *.log
 logs/
 
-### JVM 排障产物（Day 41 会生成，单个可能几百 MB）###
+### Python ###
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+
+### JVM 排障产物（单个可能几百 MB）###
 *.hprof
 *.jfr
 hs_err_pid*.log

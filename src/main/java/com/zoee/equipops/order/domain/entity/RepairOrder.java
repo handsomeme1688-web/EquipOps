@@ -20,6 +20,7 @@ public class RepairOrder {
     @Version
     private Integer version;
     private String idempotencyKey;
+    private String requestHash;
     private Long deptId;
     private Long assignId;
     private OrderStatus status;
@@ -33,4 +34,6 @@ public class RepairOrder {
     private LocalDateTime finishTime;
     private LocalDateTime checkTime;
     private LocalDateTime closeTime;
+    private Boolean timedOut;
+    private LocalDateTime timeoutTime;
 }

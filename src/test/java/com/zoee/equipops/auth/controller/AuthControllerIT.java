@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -107,7 +108,7 @@ class AuthControllerIT {
     @DisplayName("过期 Token 访问受保护接口返回 401")
     void shouldReturn401WhenTokenExpired() throws Exception {
         String expiredToken = Jwts.builder()
-                .setClaims(Map.of("userId", 1L, "deptId", 1L))
+                .setClaims(new HashMap<>(Map.of("userId", 1L, "deptId", 1L)))
                 .setExpiration(new Date(System.currentTimeMillis() - 1000))
                 .signWith(SignatureAlgorithm.HS256, jwtUtil.getSecret())
                 .compact();

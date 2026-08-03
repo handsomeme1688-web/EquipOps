@@ -30,4 +30,10 @@ public class Result<T> {
         result.msg=msg;
         return result;
     }
+
+    public static <T> Result<T> error(int code, String msg, T data) {
+        Result<T> result = error(code, msg);
+        result.data = data;
+        return result;
+    }
 }

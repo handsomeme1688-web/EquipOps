@@ -41,6 +41,21 @@ jwt:
   access-token-expire: 7200
 mybatis-plus:
   type-enums-package: com.zoee.equipops
+knife4j:
+  enable: true
+springdoc:
+  packages-to-scan: com.zoee.equipops
+  paths-to-match: /**
+equipops:
+  device:
+    detail-cache:
+      enabled: ${EQUIPOPS_DEVICE_DETAIL_CACHE_ENABLED:true}
+  order:
+    timeout-scan:
+      enabled: true
+      cron: "0 0/10 * * * *"
+      zone: "Asia/Shanghai"
+      batch-size: 200
 #严格命名规范
 #  src/main/resources/
 #  └── db/

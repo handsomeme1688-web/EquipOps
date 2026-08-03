@@ -3,6 +3,7 @@ package com.zoee.equipops.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zoee.equipops.system.entity.UserRole;
+import com.zoee.equipops.common.service.AfterCommitExecutor;
 import com.zoee.equipops.system.mapper.UserRoleMapper;
 import com.zoee.equipops.system.service.UserRoleService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserRoleServiceImpl extends ServiceImpl<UserRoleMapper, UserRole> implements UserRoleService {
     private final RedisTemplate<String, Object> redisTemplate;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -32,6 +34,9 @@ public class UserRoleServiceImpl extends ServiceImpl<UserRoleMapper, UserRole> i
             }
             saveBatch(userRoles);
         }
-        redisTemplate.delete("user:permissions:" + userId); // 权限变更后清缓存
+        afterCommitExecutor.execute(
+                "evict-user-permissions-" + userId,
+                () -> redisTemplate.delete("user:permissions:" + userId)
+        );
     }
 }

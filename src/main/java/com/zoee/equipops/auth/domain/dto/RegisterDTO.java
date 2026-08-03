@@ -3,6 +3,7 @@ package com.zoee.equipops.auth.domain.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -21,6 +22,7 @@ public class RegisterDTO {
     private String realName;
 
     @NotNull(message = "所属部门不能为空")
+    @Positive(message = "所属部门 ID 必须为正数")
     private Long deptId;
 
     @Size(max = 20, message = "手机号长度不超过 20 位")

@@ -2,10 +2,12 @@ package com.zoee.equipops.device.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zoee.equipops.TestcontainersConfiguration;
+import com.zoee.equipops.common.context.UserContext;
 import com.zoee.equipops.device.domain.entity.Device;
 import com.zoee.equipops.device.domain.query.DeviceQuery;
 import com.zoee.equipops.device.domain.vo.DeviceVO;
 import com.zoee.equipops.device.enums.DeviceStatus;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -52,6 +54,10 @@ class DeviceServiceIT {
 
     @BeforeEach
     void setUp() {
+        // 本测试验证管理员的跨部门组合查询，因此显式建立管理员上下文。
+        UserContext.setUserId(1L);
+        UserContext.setDeptId(1L);
+
         // 第一生产车间 (deptId=2)、责任人张三 (ownerId=2)
         deviceDept2Normal = saveDevice("DEV-001", "注塑机Alpha", "ZX-100",
                 "一车间A区", 2L, 2L, DeviceStatus.NORMAL);
@@ -62,6 +68,11 @@ class DeviceServiceIT {
                 "二车间A区", 3L, 3L, DeviceStatus.NORMAL);
         deviceDept3Disabled = saveDevice("DEV-004", "冲压机Delta", "CY-10",
                 "二车间B区", 3L, 3L, DeviceStatus.DISABLED);
+    }
+
+    @AfterEach
+    void tearDown() {
+        UserContext.remove();
     }
 
     /**
@@ -165,7 +176,7 @@ class DeviceServiceIT {
         }
 
         @Test
-        @DisplayName("名称 + 部门 -> 第二生产车间的 2 台含「机」设备")
+        @DisplayName("名称 + 部门 -> 第二生产车间仅冲压机含「机」")
         void shouldFilterByNameAndDept() {
             DeviceQuery query = new DeviceQuery();
             query.setName("机");
@@ -173,10 +184,10 @@ class DeviceServiceIT {
 
             Page<DeviceVO> page = deviceService.page(query);
 
-            assertThat(page.getTotal()).isEqualTo(2);
+            assertThat(page.getTotal()).isEqualTo(1);
             assertThat(page.getRecords())
                     .extracting(DeviceVO::getName)
-                    .containsExactlyInAnyOrder("数控铣床Gamma", "冲压机Delta");
+                    .containsExactly("冲压机Delta");
         }
 
         @Test

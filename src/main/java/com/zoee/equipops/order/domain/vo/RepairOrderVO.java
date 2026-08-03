@@ -19,4 +19,6 @@ public class RepairOrderVO {
     private LocalDateTime finishTime;
     private LocalDateTime checkTime;
     private LocalDateTime closeTime;
+    private Boolean timedOut;
+    private LocalDateTime timeoutTime;
 }

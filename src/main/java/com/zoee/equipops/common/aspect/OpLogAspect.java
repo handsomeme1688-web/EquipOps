@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -30,25 +32,26 @@ public class OpLogAspect {
 
     @Around("@annotation(opLog)")
     public Object around(ProceedingJoinPoint joinPoint, OpLog opLog) throws Throwable {
-        OperationLog log = new OperationLog();
-        log.setOperatorId(UserContext.getUserId());
-        log.setOperatorName(getOperatorName());
-        log.setResourceType(opLog.resourceType());
-        log.setAction(opLog.action());
-        log.setTraceId(resolveTraceId());
-        log.setIp(getClientIp());
-        log.setCreateTime(LocalDateTime.now());
+        Long operatorId = getOperatorId();
+        OperationLog operationLog = new OperationLog();
+        operationLog.setOperatorId(operatorId);
+        operationLog.setOperatorName(getOperatorNameSafely(operatorId));
+        operationLog.setResourceType(opLog.resourceType());
+        operationLog.setAction(opLog.action());
+        operationLog.setTraceId(resolveTraceId());
+        operationLog.setIp(getClientIp());
+        operationLog.setCreateTime(LocalDateTime.now());
 
         try {
             Object result = joinPoint.proceed();
-            log.setResult(1);
+            operationLog.setResult(1);
             return result;
         } catch (Throwable e) {
-            log.setResult(0);
-            log.setErrorMsg(truncate(e.getMessage(), 500));
+            operationLog.setResult(0);
+            operationLog.setErrorMsg(truncate(e.getMessage(), 500));
             throw e;
         } finally {
-            writeSafely(log);
+            writeSafely(operationLog);
         }
     }
 
@@ -65,17 +68,34 @@ public class OpLogAspect {
         }
     }
 
-    private String getOperatorName() {
-        Long userId = UserContext.getUserId();
+    private Long getOperatorId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof Long userId) {
+            return userId;
+        }
+        // 兼容尚未迁移到 SecurityContext 的旧业务代码，后续可移除该回退。
+        return UserContext.getUserId();
+    }
+
+    private String getOperatorNameSafely(Long userId) {
         if (userId == null) return "未知";
-        User user = userService.getById(userId);
-        return user != null ? user.getRealName() : "未知";
+        try {
+            User user = userService.getById(userId);
+            return user != null ? user.getRealName() : "未知";
+        } catch (RuntimeException exception) {
+            log.warn("Failed to resolve operation-log user name, userId={}", userId, exception);
+            return "未知";
+        }
     }
 
     private String getClientIp() {
         String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isEmpty()) return xff.split(",")[0].trim();
-        return request.getRemoteAddr();
+        if (xff != null && !xff.isEmpty()) {
+            return truncate(xff.split(",")[0].trim(), 64);
+        }
+        return truncate(request.getRemoteAddr(), 64);
     }
 
     private String resolveTraceId() {

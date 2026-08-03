@@ -9,11 +9,13 @@ import com.zoee.equipops.common.context.UserContext;
 import com.zoee.equipops.common.result.Result;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
     private final AuthService authService;
 

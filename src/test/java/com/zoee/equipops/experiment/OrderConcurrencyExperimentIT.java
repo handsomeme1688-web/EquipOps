@@ -14,6 +14,7 @@ import com.zoee.equipops.order.service.RepairOrderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @DisplayName("工单并发控制实验")
+@Tag("benchmark")
 class OrderConcurrencyExperimentIT {
 
     @Autowired
@@ -98,6 +100,8 @@ class OrderConcurrencyExperimentIT {
         order.setCreateBy(2L);
         order.setCreateTime(LocalDateTime.now());
         order.setIdempotencyKey(java.util.UUID.randomUUID().toString());
+        order.setRequestHash("0".repeat(64));
+        order.setTimedOut(false);
         orderService.save(order);
         orderId = order.getId();
         orderIdsToClean.add(orderId);

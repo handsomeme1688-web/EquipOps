@@ -2,11 +2,12 @@ package com.zoee.equipops.system.service;
 
 import com.zoee.equipops.TestcontainersConfiguration;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -19,14 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>验证 user_role 表真正的多对多能力——
  * 一个用户绑两个角色时，权限集是两个角色权限的并集，而非只取其一。
  *
- * <p>类级 @Transactional 保证测试结束后角色分配被回滚，
- * 种子数据（zhangsan 仅 EMPLOYEE）不变，不影响其他测试。
+ * <p>测试使用真实提交，以便验证“数据库提交后再删权限缓存”；
+ * 每个测试前后都显式恢复 zhangsan 的 EMPLOYEE 角色。
  *
  * @author zoe
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-@Transactional
 @DisplayName("多角色权限并集集成测试")
 class PermissionServiceIT {
 
@@ -48,6 +48,16 @@ class PermissionServiceIT {
     private static final Long ZHANGSAN_ID = 2L;
     private static final Long EMPLOYEE_ROLE_ID = 1L;
     private static final Long DEPT_MANAGER_ROLE_ID = 2L;
+
+    @BeforeEach
+    void resetBeforeTest() {
+        userRoleService.assignRole(ZHANGSAN_ID, List.of(EMPLOYEE_ROLE_ID));
+    }
+
+    @AfterEach
+    void restoreAfterTest() {
+        userRoleService.assignRole(ZHANGSAN_ID, List.of(EMPLOYEE_ROLE_ID));
+    }
 
     @Test
     @DisplayName("单角色 EMPLOYEE → 5 项权限")

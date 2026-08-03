@@ -3,6 +3,7 @@ package com.zoee.equipops.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zoee.equipops.system.entity.RolePermission;
+import com.zoee.equipops.common.service.AfterCommitExecutor;
 import com.zoee.equipops.system.entity.UserRole;
 import com.zoee.equipops.system.mapper.RolePermissionMapper;
 import com.zoee.equipops.system.mapper.UserRoleMapper;
@@ -20,6 +21,7 @@ import java.util.List;
 public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,RolePermission> implements RolePermissionService {
     private final RedisTemplate<String,Object> redisTemplate;
     private final UserRoleMapper userRoleMapper;
+    private final AfterCommitExecutor afterCommitExecutor;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -36,8 +38,13 @@ public class RolePermissionServiceImpl extends ServiceImpl<RolePermissionMapper,
             saveBatch(newList);
         }
         List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getRoleId, roleId));
-        for(UserRole ur  : userRoles){
-            redisTemplate.delete("user:permissions:"+ur.getUserId());
-        }
+        List<String> cacheKeys = userRoles.stream()
+                .map(userRole -> "user:permissions:" + userRole.getUserId())
+                .toList();
+        afterCommitExecutor.execute("evict-role-permission-caches-" + roleId, () -> {
+            if (!cacheKeys.isEmpty()) {
+                redisTemplate.delete(cacheKeys);
+            }
+        });
     }
 }

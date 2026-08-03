@@ -7,6 +7,7 @@ import com.zoee.equipops.auth.service.PermissionCheckService;
 import com.zoee.equipops.common.context.UserContext;
 import com.zoee.equipops.common.exception.BizException;
 import com.zoee.equipops.common.result.ResultCode;
+import com.zoee.equipops.common.service.AfterCommitExecutor;
 import com.zoee.equipops.device.domain.dto.DeviceCreateDTO;
 import com.zoee.equipops.device.domain.dto.DeviceUpdateDTO;
 import com.zoee.equipops.device.domain.entity.Device;
@@ -16,11 +17,10 @@ import com.zoee.equipops.device.enums.DeviceStatus;
 import com.zoee.equipops.device.mapper.DeviceMapper;
 import com.zoee.equipops.device.service.DeviceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 
@@ -33,6 +33,10 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
 
     private final RedisTemplate<String,Object> redisTemplate;
     private final PermissionCheckService permissionCheckService;
+    private final AfterCommitExecutor afterCommitExecutor;
+
+    @Value("${equipops.device.detail-cache.enabled:true}")
+    private boolean detailCacheEnabled;
 
     private DeviceVO toVO(Device device) {
         if (device == null) return null;
@@ -105,6 +109,15 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
 
     @Override
     public DeviceVO detail(Long id) {
+        if (!detailCacheEnabled) {
+            Device device = getById(id);
+            if (device == null) {
+                throw new BizException(ResultCode.DEVICE_NOT_FOUND);
+            }
+            validateDataScope(device.getDeptId());
+            return toVO(device);
+        }
+
         String key = detailCacheKey(id);
         String nullKey = nullDetailCacheKey(id);
 
@@ -119,9 +132,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
                 redisTemplate.opsForValue().set(nullKey, Boolean.TRUE, Duration.ofSeconds(2 * 60));
                 throw new BizException(ResultCode.DEVICE_NOT_FOUND);
             }
-            if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existDevice.getDeptId().equals(UserContext.getDeptId())){
-                throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
-            }
+            validateDataScope(existDevice.getDeptId());
             int ttl = 30 * 60 + (int) (Math.random() * 300);
             DeviceVO vo = toVO(existDevice);
             redisTemplate.opsForValue().set(key,vo, Duration.ofSeconds(ttl));
@@ -129,9 +140,7 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
         }
 
         DeviceVO existVO=(DeviceVO) cached;
-        if(!permissionCheckService.isAdmin(UserContext.getUserId()) && !existVO.getDeptId().equals(UserContext.getDeptId())){
-            throw new BizException(ResultCode.NOT_FOUND);// 故意返回 404 而非 403，不给攻击者确认"这个 ID 存在"
-        }
+        validateDataScope(existVO.getDeptId());
         return existVO;
     }
 
@@ -152,21 +161,10 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
     }
 
     private void evictDetailCacheAfterCommit(Long id) {
-        Runnable evict = () -> {
+        afterCommitExecutor.execute("evict-device-detail-" + id, () -> {
             redisTemplate.delete(detailCacheKey(id));
             redisTemplate.delete(nullDetailCacheKey(id));
-        };
-        if (TransactionSynchronizationManager.isActualTransactionActive()
-                && TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    evict.run();
-                }
-            });
-            return;
-        }
-        evict.run();
+        });
     }
 
     private String detailCacheKey(Long id) {
@@ -175,5 +173,13 @@ public class DeviceServiceImpl extends ServiceImpl<DeviceMapper, Device> impleme
 
     private String nullDetailCacheKey(Long id) {
         return DEVICE_NULL_CACHE_PREFIX + id;
+    }
+
+    private void validateDataScope(Long resourceDeptId) {
+        if (!permissionCheckService.isAdmin(UserContext.getUserId())
+                && !resourceDeptId.equals(UserContext.getDeptId())) {
+            // 故意返回 404，不向调用方泄漏其他部门的资源是否存在。
+            throw new BizException(ResultCode.NOT_FOUND);
+        }
     }
 }
