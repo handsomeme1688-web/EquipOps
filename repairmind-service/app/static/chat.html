@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RepairMind 维修助手</title>
+<style>
+  :root {
+    --ink: #172436; --muted: #5c6878; --line: #d7e0e8;
+    --accent: #1769aa; --accent-soft: #eef6fc; --bg: #f4f7fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; display: flex; flex-direction: column;
+    font-family: "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg); color: var(--ink);
+  }
+  header {
+    display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+    background: #fff; border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 16px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .controls { margin-left: auto; display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  select {
+    padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px;
+    background: #fff; color: var(--ink); font-size: 13px;
+  }
+  #msgs {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .msg { max-width: 72%; padding: 10px 14px; border-radius: 12px; line-height: 1.55; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg .reqid { display: block; margin-top: 6px; font-size: 11px; color: var(--muted); }
+  .meta { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; font-size: 12px; color: var(--muted); }
+  .meta b { color: var(--accent); }
+  .tool { margin: 4px 0; padding: 6px 8px; background: var(--accent-soft); border-radius: 6px; font-size: 12px; }
+  .tool .args { color: var(--muted); }
+  .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
+  #inputbar {
+    display: flex; gap: 10px; padding: 14px 20px; background: #fff;
+    border-top: 1px solid var(--line);
+  }
+  #input {
+    flex: 1; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 14px; outline: none; resize: none; font-family: inherit;
+  }
+  #input:focus { border-color: var(--accent); }
+  #send {
+    padding: 10px 22px; border: none; border-radius: 10px; background: var(--accent);
+    color: #fff; font-size: 14px; cursor: pointer;
+  }
+  #send:disabled { background: #9db8cc; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔧 RepairMind 维修助手</h1>
+  <span class="sub">混合检索 RAG · 受控工具调用 · 数据隔离</span>
+  <div class="controls">
+    <label>模式
+      <select id="mode">
+        <option value="agent">Agent 工具</option>
+        <option value="rag">RAG 问答</option>
+        <option value="rag-stream">RAG 流式(JWT)</option>
+      </select>
+    </label>
+    <label>部门
+      <select id="dept">
+        <option value="dept-mold-01">模具中心</option>
+        <option value="dept-stamp-02">冲压中心</option>
+      </select>
+    </label>
+    <button id="new" title="清空记忆，开启新会话">🆕 新会话</button>
+  </div>
+</header>
+
+<div id="msgs">
+  <div class="hint">试试："怎么拆内存条" / "EQ-1001 的维修历史" / "更换电池前要做什么准备"</div>
+</div>
+
+<div id="inputbar">
+  <textarea id="input" rows="1" placeholder="输入维修问题，Enter 发送"></textarea>
+  <button id="send">发送</button>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const msgs = $("msgs"), input = $("input"), send = $("send");
+let sessionId = crypto.randomUUID();  // 每个浏览器标签页一个会话，多轮记忆生效
+let jwtToken = null;                  // JWT（流式模式用，dept 隔离以它为准）
+
+async function ensureToken() {
+  if (jwtToken) return jwtToken;
+  const r = await fetch("/dev/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dept_id: $("dept").value }),
+  });
+  jwtToken = (await r.json()).token;
+  return jwtToken;
+}
+$("dept").onchange = () => { jwtToken = null; };
+
+function addMsg(role, html) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s || "";
+  return d.innerHTML;
+}
+
+function renderRag(d) {
+  let html = esc(d.answer);
+  if (d.sources && d.sources.length) {
+    html += '<div class="meta">📎 引用来源：<b>' + esc(d.sources.map(s => "第" + s.page_number + "页").join("、")) + "</b></div>";
+  }
+  if (d.refused) html += '<div class="meta">⚠️ 已拒答（无依据）</div>';
+  html += '<span class="reqid">request_id: ' + esc(d.request_id) + "</span>";
+  return html;
+}
+
+function renderAgent(d) {
+  let html = esc(d.answer);
+  if (d.tool_trace && d.tool_trace.length) {
+    html += '<div class="meta">🔧 工具调用轨迹：';
+    html += d.tool_trace.map(t =>
+      '<div class="tool">⚙ ' + esc(t.name) + ' <span class="args">' + esc(JSON.stringify(t.args)) + '</span><br>→ ' + esc(t.result.slice(0, 60)) + (t.result.length > 60 ? "…" : "") + "</div>"
+    ).join("");
+    html += "</div>";
+  }
+  html += '<span class="reqid">request_id: ' + esc(d.request_id) + "</span>";
+  return html;
+}
+
+async function askStream(body) {
+  const tok = await ensureToken();
+  const r = await fetch("/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tok },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok || !r.body) {
+    addMsg("assistant", "⚠️ 流式失败：" + r.status);
+    return;
+  }
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  const div = document.createElement("div");
+  div.className = "msg assistant";
+  msgs.appendChild(div);
+  let text = "", buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const events = buf.split("\n\n");
+    buf = events.pop();
+    for (const ev of events) {
+      const dl = ev.split("\n").find(l => l.startsWith("data: "));
+      if (!dl) continue;
+      const evName = (ev.split("\n").find(l => l.startsWith("event: ")) || "").slice(7) || "message";
+      const data = JSON.parse(dl.slice(6));
+      if (evName === "delta") {
+        text += data.text;
+        div.innerHTML = esc(text) + '<span class="reqid">⏳ 流式中…</span>';
+        msgs.scrollTop = msgs.scrollHeight;
+      } else if (evName === "done") {
+        div.innerHTML = esc(text) + '<span class="reqid">request_id: ' + esc(data.request_id) + "</span>";
+      } else if (evName === "error") {
+        div.innerHTML = "⚠️ " + esc(data.msg || JSON.stringify(data));
+      }
+    }
+  }
+}
+
+async function ask() {
+  const q = input.value.trim();
+  if (!q || send.disabled) return;
+  addMsg("user", esc(q));
+  input.value = "";
+  send.disabled = true;
+
+  const mode = $("mode").value;
+  const body = { question: q, tenant_id: "t1", dept_id: $("dept").value, session_id: sessionId };
+  if (mode === "rag-stream") {
+    try { await askStream({ ...body, mode: "rag", stream: true }); }
+    catch (e) { addMsg("assistant", "⚠️ 请求失败：" + esc(String(e))); }
+    send.disabled = false; input.focus(); return;
+  }
+
+  const url = mode === "agent" ? "/agent/chat" : "/ask";
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      addMsg("assistant", "⚠️ 服务降级：" + esc(d.msg || d.detail || r.status));
+    } else {
+      addMsg("assistant", mode === "agent" ? renderAgent(d) : renderRag(d));
+    }
+  } catch (e) {
+    addMsg("assistant", "⚠️ 请求失败：" + esc(String(e)));
+  }
+  send.disabled = false;
+  input.focus();
+}
+
+send.onclick = ask;
+$("new").onclick = () => {
+  sessionId = crypto.randomUUID();
+  msgs.innerHTML = '<div class="hint">🆕 新会话已开始（记忆已清空）。试试："怎么拆内存条" / "EQ-1001 的维修历史"</div>';
+  input.focus();
+};
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
+});
+input.focus();
+</script>
+</body>
+</html>

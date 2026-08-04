@@ -1,0 +1,16 @@
+{
+  "devices": [
+    {"device_id": "EQ-1001", "name": "海天注塑机 MA1200", "model": "MA1200", "dept_id": "dept-mold-01", "status": "运行中"},
+    {"device_id": "EQ-1002", "name": "思高精雕机 DS-540", "model": "DS-540", "dept_id": "dept-mold-01", "status": "维修中"},
+    {"device_id": "EQ-1003", "name": "奥玛特线切割 DK7745", "model": "DK7745", "dept_id": "dept-mold-01", "status": "运行中"},
+    {"device_id": "EQ-1004", "name": "永进加工中心 MV-1060", "model": "MV-1060", "dept_id": "dept-mold-01", "status": "待机"},
+    {"device_id": "EQ-2001", "name": "冲压机 J23-40", "model": "J23-40", "dept_id": "dept-stamp-02", "status": "运行中"}
+  ],
+  "repair_history": [
+    {"repair_id": "R-2026-031", "device_id": "EQ-1001", "dept_id": "dept-mold-01", "fault": "液压泵压力不足", "fix": "更换压力传感器并校准", "date": "2026-07-15", "status": "已完成"},
+    {"repair_id": "R-2026-038", "device_id": "EQ-1001", "dept_id": "dept-mold-01", "fault": "合模异响", "fix": "更换肘杆润滑脂并紧固", "date": "2026-07-28", "status": "已完成"},
+    {"repair_id": "R-2026-042", "device_id": "EQ-1002", "dept_id": "dept-mold-01", "fault": "主轴刀库报警", "fix": "重新对刀并校验零点", "date": "2026-08-02", "status": "维修中"},
+    {"repair_id": "R-2026-045", "device_id": "EQ-1003", "dept_id": "dept-mold-01", "fault": "运丝电机过热", "fix": "清理导电块并更换冷却液", "date": "2026-08-03", "status": "待确认"},
+    {"repair_id": "R-2026-010", "device_id": "EQ-2001", "dept_id": "dept-stamp-02", "fault": "离合器打滑", "fix": "更换摩擦片", "date": "2026-06-20", "status": "已完成"}
+  ]
+}

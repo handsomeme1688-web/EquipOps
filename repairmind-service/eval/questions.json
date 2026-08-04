@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "corpus": "dell-inspiron-16-7610-service-manual",
+    "chunk_count": 87,
+    "note": "评测问句均改写自维修场景，不与语料原句重合（手册 Day28 要求）。应命中 chunk_id 由人工标注。"
+  },
+  "questions": [
+    {"question": "想把电脑后盖拆下来，一共要拧几颗螺丝？", "standard_points": ["七颗 M2x4 螺钉，两颗 M2x8.5 固定螺钉"], "expected_chunk_ids": ["dell-inspiron-16-15-chunk-1"]},
+    {"question": "打开笔记本后盖需要用到哪几种工具？", "standard_points": ["0号/1号梅花槽螺丝刀、塑料划片"], "expected_chunk_ids": ["dell-inspiron-16-11-chunk-1"]},
+    {"question": "电脑里装了两条内存条，换其中一条时要注意什么？", "standard_points": ["重复卸下步骤 1-3 处理第二条"], "expected_chunk_ids": ["dell-inspiron-16-18-chunk-1"]},
+    {"question": "操作锂电池前有哪些安全注意事项？", "standard_points": ["先完全放电，不挤压、抛掷、刺穿电池"], "expected_chunk_ids": ["dell-inspiron-16-28-chunk-1"]},
+    {"question": "从主板上把电池取下来要拧几颗固定螺丝？", "standard_points": ["五颗 M2x3 螺钉"], "expected_chunk_ids": ["dell-inspiron-16-29-chunk-1"]},
+    {"question": "换硬盘时，固定它的螺钉需要多大尺寸？", "standard_points": ["M2x3"], "expected_chunk_ids": ["dell-inspiron-16-24-chunk-1"]},
+    {"question": "怎么判断内存条已经正确安装到位了？", "standard_points": ["向下按压直到固定夹咔哒一声锁定"], "expected_chunk_ids": ["dell-inspiron-16-19-chunk-1"]},
+    {"question": "拆卸散热器时固定螺钉要按什么顺序拧松？", "standard_points": ["反向顺序 7>6>5>4>3>2>1"], "expected_chunk_ids": ["dell-inspiron-16-40-chunk-1"]},
+    {"question": "换过主板或散热器后，安装散热器需要注意什么？", "standard_points": ["使用套件提供的导热油脂"], "expected_chunk_ids": ["dell-inspiron-16-40-chunk-1"]},
+    {"question": "安装无线网卡时天线线缆怎么区分主辅？", "standard_points": ["主要白色、辅助黑色"], "expected_chunk_ids": ["dell-inspiron-16-27-chunk-1"]},
+    {"question": "为什么拆装电子元件时要特别注意防静电？", "standard_points": ["轻微静电放电可能损害电路，造成间歇性问题"], "expected_chunk_ids": ["dell-inspiron-16-8-chunk-2"]},
+    {"question": "上门维修的防静电工具包一般包含哪些东西？", "standard_points": ["防静电垫、腕带、接合线"], "expected_chunk_ids": ["dell-inspiron-16-8-chunk-4"]},
+    {"question": "开机后电源灯闪两下白、三下白是哪里出了问题？", "standard_points": ["未检测到内存或 RAM"], "expected_chunk_ids": ["dell-inspiron-16-72-chunk-1"]},
+    {"question": "电脑自带的硬件检测工具叫什么？", "standard_points": ["SupportAssist 板载诊断程序"], "expected_chunk_ids": ["dell-inspiron-16-72-chunk-2"]},
+    {"question": "电池鼓包膨胀了应该怎么处理？", "standard_points": ["保修内用批准的包装退回戴尔，否则送回收中心"], "expected_chunk_ids": ["dell-inspiron-16-71-chunk-3"]},
+    {"question": "锂电池为什么会发生鼓包？", "standard_points": ["锂离子聚合物电池容易膨胀，可能影响笔记本"], "expected_chunk_ids": ["dell-inspiron-16-71-chunk-2"]},
+    {"question": "想从 U 盘引导更新 BIOS，应该怎么做？", "standard_points": ["F12 一次性引导菜单，U盘格式化为 FAT32"], "expected_chunk_ids": ["dell-inspiron-16-69-chunk-2"]},
+    {"question": "从哪里能拿到新版 BIOS 固件用于升级？", "standard_points": ["戴尔支持网站-驱动程序和下载-选择BIOS"], "expected_chunk_ids": ["dell-inspiron-16-69-chunk-1"]},
+    {"question": "想清除或修改系统密码，前提是什么？", "standard_points": ["密码状态必须为已锁定"], "expected_chunk_ids": ["dell-inspiron-16-68-chunk-1"]},
+    {"question": "拆显示屏时，右侧转轴固定的螺丝规格是多少？", "standard_points": ["三颗 M2.5x5"], "expected_chunk_ids": ["dell-inspiron-16-32-chunk-1"]},
+    {"question": "换触控板之前需要先拆下哪些部件？", "standard_points": ["基座护盖、M.2 固态硬盘"], "expected_chunk_ids": ["dell-inspiron-16-54-chunk-1"]},
+    {"question": "扬声器拆卸时线缆是怎么取出来的？", "standard_points": ["从布线导轨中拔出"], "expected_chunk_ids": ["dell-inspiron-16-57-chunk-1"]},
+    {"question": "组装完成后接通电源开机前最后要做哪些事？", "standard_points": ["装回所有螺钉、连接外设与线缆、接通电源"], "expected_chunk_ids": ["dell-inspiron-16-10-chunk-1", "dell-inspiron-16-7-chunk-2"]},
+    {"question": "拆基座护盖之前要做哪些前置准备？", "standard_points": ["按拆装前步骤操作、进入维修模式、确认没装 micro-SD 卡"], "expected_chunk_ids": ["dell-inspiron-16-14-chunk-1"]},
+    {"question": "要把系统板整个拿下来，需要先拆掉哪些东西？", "standard_points": ["无线卡、电池、左右风扇、散热器等"], "expected_chunk_ids": ["dell-inspiron-16-50-chunk-1"]},
+    {"question": "I/O 板上带指纹识别的电源按钮线缆怎么断开？", "standard_points": ["提起连接器闩锁后断开"], "expected_chunk_ids": ["dell-inspiron-16-35-chunk-1"]},
+    {"question": "这本维修手册适用于什么配置的电脑？", "standard_points": ["仅适用于安装三个风扇的 Inspiron 16 7610"], "expected_chunk_ids": ["dell-inspiron-16-6-chunk-1"]}
+  ]
+}
